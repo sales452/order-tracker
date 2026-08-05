@@ -481,12 +481,22 @@ window.printOrder = function(id){
   const o = orders.find(x=>x.id===id);
   if(!o) return;
   const ccy = o.currency || "INR";
+  const PRINT_STATUS_COLOR = {
+    "Pending": "#B33A2E",
+    "Ready to ship": "#1D6B63",
+    "Partial": "#B87B15",
+    "Shipped": "#3A5A78",
+    "Delivered": "#3F6B4F",
+    "Cancelled": "#4C5A6B"
+  };
   const rows = (o.items||[]).map(it => {
     const remaining = Math.max(0,(it.qty||0)-(it.shippedQty||0));
     const st = itemStatus(it);
+    const stColor = PRINT_STATUS_COLOR[st] || "#000";
     return `<tr>
       <td>${it.item}</td><td>${it.qty}</td><td>${it.shippedQty||0}</td>
-      <td>${remaining}</td><td>${fmt(it.price, ccy)}</td><td>${fmt((it.qty||0)*(it.price||0), ccy)}</td><td>${st}</td>
+      <td>${remaining}</td><td>${fmt(it.price, ccy)}</td><td>${fmt((it.qty||0)*(it.price||0), ccy)}</td>
+      <td><span style="color:${stColor};font-weight:600;">${st}</span></td>
     </tr>`;
   }).join("");
   const grandTotal = (o.items||[]).reduce((s,it)=>s+(it.qty||0)*(it.price||0),0);
