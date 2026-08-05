@@ -232,15 +232,52 @@
   </div>
 </div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCD0LrzF54SPZnPQMRkpoZqA8-oVmkR7go",
+  authDomain: "order-tracking-790ce.firebaseapp.com",
+  projectId: "order-tracking-790ce",
+  storageBucket: "order-tracking-790ce.firebasestorage.app",
+  messagingSenderId: "750223130794",
+  appId: "1:750223130794:web:5a4e7e6b5eead3814fd0d3"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+const ordersCol = collection(db, "orders");
 const STATUSES = ["Pending","Packed","Shipped","Delivered","Cancelled"];
-const STORE_KEY = "order-tracker.orders";
-let orders = JSON.parse(localStorage.getItem(STORE_KEY) || "[]");
+let orders = [];
 let activeFilter = "All";
 let searchTerm = "";
 let editingId = null;
-
-function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(orders)); render(); }
+function loadOrders(){
+  onSnapshot(ordersCol, (snapshot) => {
+    orders = snapshot.docs.map(d => d.data());
+    render();
+  }, (err) => {
+    console.error("Failed to load orders from Firestore", err);
+  });
+}
+async function saveOrderToDb(o){
+  try{
+    await setDoc(doc(db, "orders", o.id), o);
+  }catch(err){
+    console.error("Failed to save to Firestore", err);
+    alert("Could not save to the database. Check your connection and try again.");
+  }
+}
+async function deleteOrderFromDb(id){
+  try{
+    await deleteDoc(doc(db, "orders", id));
+  }catch(err){
+    console.error("Failed to delete from Firestore", err);
+    alert("Could not delete from the database. Check your connection and try again.");
+  }
+}
 function fmt(n){ return "₹" + Number(n||0).toLocaleString("en-IN", {maximumFractionDigits:2}); }
 function nextId(){
   const nums = orders.map(o => parseInt((o.id||"").replace("ORD-",""),10)).filter(n=>!isNaN(n));
@@ -319,12 +356,11 @@ function render(){ renderFilters(); renderStats(); renderRows(); populateDatalis
 
 function changeStatus(id, status){
   const o = orders.find(x=>x.id===id);
-  if(o){ o.status = status; save(); }
+  if(o){ o.status = status; saveOrderToDb(o); }
 }
 function deleteOrder(id){
   if(!confirm("Delete order " + id + "?")) return;
-  orders = orders.filter(o=>o.id!==id);
-  save();
+  deleteOrderFromDb(id);
 }
 
 document.getElementById("search").addEventListener("input", e=>{
@@ -374,16 +410,15 @@ document.getElementById("saveOrder").onclick = () => {
     if(o){
       o.date = date; o.customer = customer; o.item = item;
       o.qty = qty; o.price = price; o.status = status; o.notes = notes;
+      saveOrderToDb(o);
     }
   } else {
-    orders.push({
-      id: nextId(), date, customer, item, qty, price, status, notes,
-      packedQty:0, packedBy:"", datePacked:""
-    });
+    const newOrder = { id: nextId(), date, customer, item, qty, price, status, notes,
+      packedQty:0, packedBy:"", datePacked:"" };
+    saveOrderToDb(newOrder);
   }
   editingId = null;
   orderOverlay.classList.remove("show");
-  save();
 };
 
 const packOverlay = document.getElementById("packOverlay");
@@ -416,13 +451,13 @@ document.getElementById("closePack").onclick = () => {
     o.packedQty = Number(document.getElementById("p-qty").value)||0;
     o.packedBy = document.getElementById("p-by").value.trim();
     o.datePacked = document.getElementById("p-date").value;
-    save();
+    saveOrderToDb(o);
   }
   packOverlay.classList.remove("show");
 };
 document.getElementById("printPack").onclick = () => window.print();
 
-render();
+loadOrders();
 </script>
 </body>
 </html>
