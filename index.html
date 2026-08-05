@@ -173,6 +173,20 @@
   @media print{
     .toolbar,.filters,header button,.rowbtn{display:none;}
   }
+  #printArea{display:none;}
+  @media print{
+    body > .wrap, body > .overlay{display:none !important;}
+    #printArea{
+      display:block !important;
+      font-family:'Inter',sans-serif;color:#000;padding:0;
+    }
+    #printArea h1{font-family:'Roboto Slab',serif;font-size:1.6rem;margin:0 0 0.2rem;}
+    #printArea .meta{font-size:0.85rem;color:#333;margin-bottom:1rem;}
+    #printArea table{width:100%;border-collapse:collapse;margin-top:1rem;}
+    #printArea th, #printArea td{border:1px solid #999;padding:0.4rem 0.6rem;font-size:0.85rem;text-align:left;}
+    #printArea tfoot td{border-top:2px solid #000;}
+    #printArea .print-footer{margin-top:1.5rem;font-size:0.8rem;color:#333;}
+  }
 </style>
 </head>
 <body>
@@ -205,13 +219,22 @@
   <div class="empty" id="emptyMsg" style="display:none;">No orders yet. Add your first order to get started.</div>
 </div>
 
+<div id="printArea"></div>
+
 <div class="overlay" id="orderOverlay">
   <div class="modal">
     <h2 id="orderModalTitle">New order</h2>
-    <div class="row3">
+    <div class="row3" style="grid-template-columns:1.3fr 1fr 1fr 0.8fr;">
       <div class="field"><label>Customer name</label><input id="f-customer" list="customerList" autocomplete="off"></div>
       <div class="field"><label>PO number</label><input id="f-po" placeholder="Optional"></div>
       <div class="field"><label>Order date</label><input type="date" id="f-date"></div>
+      <div class="field"><label>Currency</label>
+        <select id="f-currency">
+          <option value="INR">INR \u20b9</option>
+          <option value="USD">USD $</option>
+          <option value="EUR">EUR \u20ac</option>
+        </select>
+      </div>
     </div>
     <datalist id="customerList"></datalist>
     <datalist id="itemList"></datalist>
@@ -284,7 +307,16 @@ async function deleteOrderFromDb(id){
   catch(err){ console.error(err); alert("Could not delete from the database. Check your connection and try again."); }
 }
 
-function fmt(n){ return "\u20b9" + Number(n||0).toLocaleString("en-IN", {maximumFractionDigits:2}); }
+const CURRENCIES = {
+  INR: { symbol: "\u20b9", locale: "en-IN" },
+  USD: { symbol: "$", locale: "en-US" },
+  EUR: { symbol: "\u20ac", locale: "en-US" }
+};
+
+function fmt(n, currencyCode){
+  const c = CURRENCIES[currencyCode] || CURRENCIES.INR;
+  return c.symbol + Number(n||0).toLocaleString(c.locale, {maximumFractionDigits:2});
+}
 function nextId(){
   const nums = orders.map(o => parseInt((o.id||"").replace("ORD-",""),10)).filter(n=>!isNaN(n));
   const next = (nums.length ? Math.max(...nums) : 0) + 1;
@@ -313,21 +345,28 @@ function renderFilters(){
 
 function renderStats(){
   const el = document.getElementById("stats");
-  let totalOrders = orders.length, totalLines = 0, pendingVal = 0, deliveredCount = 0, allVal = 0;
-  orders.forEach(o => (o.items||[]).forEach(it => {
-    totalLines++;
-    const st = itemStatus(it);
-    const remaining = Math.max(0, (Number(it.qty)||0) - (Number(it.shippedQty)||0));
-    allVal += (Number(it.qty)||0) * (Number(it.price)||0);
-    if (st === "Pending" || st === "Partial") pendingVal += remaining * (Number(it.price)||0);
-    if (st === "Delivered") deliveredCount++;
-  }));
+  let totalOrders = orders.length, totalLines = 0, deliveredCount = 0;
+  const pendingByCcy = {}, allByCcy = {};
+  orders.forEach(o => {
+    const ccy = o.currency || "INR";
+    (o.items||[]).forEach(it => {
+      totalLines++;
+      const st = itemStatus(it);
+      const remaining = Math.max(0, (Number(it.qty)||0) - (Number(it.shippedQty)||0));
+      allByCcy[ccy] = (allByCcy[ccy]||0) + (Number(it.qty)||0) * (Number(it.price)||0);
+      if (st === "Pending" || st === "Partial") pendingByCcy[ccy] = (pendingByCcy[ccy]||0) + remaining * (Number(it.price)||0);
+      if (st === "Delivered") deliveredCount++;
+    });
+  });
+  const joinCcy = (map) => Object.keys(map).length
+    ? Object.entries(map).map(([ccy,v]) => fmt(v, ccy)).join(" + ")
+    : fmt(0);
   el.innerHTML = `
     <div class="stat"><div class="n">${totalOrders}</div><div class="l">Orders</div></div>
     <div class="stat"><div class="n">${totalLines}</div><div class="l">Line items</div></div>
-    <div class="stat"><div class="n">${fmt(pendingVal)}</div><div class="l">Pending value</div></div>
+    <div class="stat"><div class="n" style="font-size:1.1rem;">${joinCcy(pendingByCcy)}</div><div class="l">Pending value</div></div>
     <div class="stat"><div class="n">${deliveredCount}</div><div class="l">Delivered lines</div></div>
-    <div class="stat"><div class="n">${fmt(allVal)}</div><div class="l">Total value</div></div>
+    <div class="stat"><div class="n" style="font-size:1.1rem;">${joinCcy(allByCcy)}</div><div class="l">Total value</div></div>
   `;
 }
 
@@ -360,13 +399,14 @@ function renderRows(){
         <td>${it.qty}</td>
         <td>${it.shippedQty||0}</td>
         <td>${remaining}</td>
-        <td>${fmt(it.price)}</td>
-        <td>${fmt((it.qty||0)*(it.price||0))}</td>
+        <td>${fmt(it.price, o.currency)}</td>
+        <td>${fmt((it.qty||0)*(it.price||0), o.currency)}</td>
         <td><span class="badge ${statusClass(st)}">${st}</span></td>
         <td class="muted" style="max-width:140px;font-size:0.78rem;">${isFirst ? (o.notes||"") : ""}</td>
         <td style="white-space:nowrap;">${isFirst ? `
           <button class="rowbtn" onclick="window.openEdit('${o.id}')">Edit</button>
           <button class="rowbtn" onclick="window.openShip('${o.id}')">Ship</button>
+          <button class="rowbtn" onclick="window.printOrder('${o.id}')">Print</button>
           <button class="rowbtn" onclick="window.deleteOrder('${o.id}')">Delete</button>
         ` : ""}</td>
       </tr>`;
@@ -388,6 +428,39 @@ function render(){ renderFilters(); renderStats(); renderRows(); populateDatalis
 window.deleteOrder = function(id){
   if(!confirm("Delete order " + id + " and all its line items?")) return;
   deleteOrderFromDb(id);
+};
+
+window.printOrder = function(id){
+  const o = orders.find(x=>x.id===id);
+  if(!o) return;
+  const ccy = o.currency || "INR";
+  const rows = (o.items||[]).map(it => {
+    const remaining = Math.max(0,(it.qty||0)-(it.shippedQty||0));
+    const st = itemStatus(it);
+    return `<tr>
+      <td>${it.item}</td><td>${it.qty}</td><td>${it.shippedQty||0}</td>
+      <td>${remaining}</td><td>${fmt(it.price, ccy)}</td><td>${fmt((it.qty||0)*(it.price||0), ccy)}</td><td>${st}</td>
+    </tr>`;
+  }).join("");
+  const grandTotal = (o.items||[]).reduce((s,it)=>s+(it.qty||0)*(it.price||0),0);
+  const allShipped = (o.items||[]).every(it => (it.shippedQty||0) >= (it.qty||0));
+  const c = CURRENCIES[ccy] || CURRENCIES.INR;
+  document.getElementById("printArea").innerHTML = `
+    <h1>Order ${o.id}${allShipped ? "" : " \u2014 Pending"}</h1>
+    <div class="meta">
+      PO number: ${o.poNumber || "\u2014"}<br>
+      Customer: ${o.customer}<br>
+      Date: ${o.date}<br>
+      Currency: ${ccy} (${c.symbol})${o.notes ? "<br>Notes: " + o.notes : ""}
+    </div>
+    <table>
+      <thead><tr><th>Item</th><th>Ordered</th><th>Shipped</th><th>Remaining</th><th>Unit price</th><th>Total</th><th>Status</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><td colspan="5" style="text-align:right;font-weight:600;">Grand total</td><td style="font-weight:600;">${fmt(grandTotal, ccy)}</td><td></td></tr></tfoot>
+    </table>
+    <div class="print-footer">Printed ${new Date().toLocaleDateString()}</div>
+  `;
+  window.print();
 };
 
 document.getElementById("search").addEventListener("input", e=>{
@@ -437,6 +510,7 @@ document.getElementById("newOrderBtn").onclick = () => {
   document.getElementById("f-customer").value = "";
   document.getElementById("f-po").value = "";
   document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
+  document.getElementById("f-currency").value = "INR";
   document.getElementById("f-notes").value = "";
   itemRowsEl.innerHTML = "";
   addLineRow();
@@ -451,6 +525,7 @@ window.openEdit = function(id){
   document.getElementById("f-customer").value = o.customer;
   document.getElementById("f-po").value = o.poNumber || "";
   document.getElementById("f-date").value = o.date;
+  document.getElementById("f-currency").value = o.currency || "INR";
   document.getElementById("f-notes").value = o.notes || "";
   itemRowsEl.innerHTML = "";
   (o.items && o.items.length ? o.items : [{}]).forEach(it => addLineRow(it));
@@ -465,11 +540,12 @@ document.getElementById("saveOrder").onclick = () => {
   if(!items.length){ alert("Add at least one line item."); return; }
   const date = document.getElementById("f-date").value || new Date().toISOString().slice(0,10);
   const poNumber = document.getElementById("f-po").value.trim();
+  const currency = document.getElementById("f-currency").value;
   const notes = document.getElementById("f-notes").value.trim();
 
   const order = {
     id: editingId || nextId(),
-    poNumber, date, customer, notes, items
+    poNumber, date, customer, currency, notes, items
   };
   saveOrderToDb(order);
   editingId = null;
