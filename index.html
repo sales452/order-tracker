@@ -32,7 +32,7 @@
     font-family:'Inter',system-ui,sans-serif;
     padding:2.5rem 1.5rem 4rem;
   }
-  .wrap{max-width:1080px;margin:0 auto;}
+  .wrap{max-width:1240px;margin:0 auto;}
   header{
     display:flex;justify-content:space-between;align-items:flex-end;
     border-bottom:2px solid var(--ink);
@@ -101,34 +101,37 @@
   table{width:100%;border-collapse:collapse;background:var(--paper-raised);}
   thead th{
     font-family:'IBM Plex Mono',monospace;
-    font-size:0.68rem;text-transform:uppercase;letter-spacing:0.5px;
+    font-size:0.66rem;text-transform:uppercase;letter-spacing:0.5px;
     color:var(--ink-soft);
-    text-align:left;padding:0.6rem 0.7rem;
+    text-align:left;padding:0.6rem 0.6rem;
     border-bottom:2px solid var(--ink);
+    white-space:nowrap;
   }
   tbody td{
-    padding:0.7rem;
+    padding:0.6rem;
     border-bottom:1px solid var(--line);
-    font-size:0.88rem;
+    font-size:0.85rem;
     vertical-align:middle;
   }
+  tbody tr.group-start td{ border-top:2px solid var(--ink); }
   tbody tr:hover{background:#F7F6EF;}
   .oid{font-family:'IBM Plex Mono',monospace;font-weight:500;}
+  .muted{color:var(--ink-soft);}
   .badge{
     display:inline-block;font-family:'IBM Plex Mono',monospace;
-    font-size:0.68rem;text-transform:uppercase;letter-spacing:0.5px;
-    padding:0.25rem 0.55rem;border-radius:2px;font-weight:500;
+    font-size:0.66rem;text-transform:uppercase;letter-spacing:0.5px;
+    padding:0.25rem 0.5rem;border-radius:2px;font-weight:500;
     cursor:pointer;border:none;
   }
   .st-pending{background:var(--rust-bg);color:var(--rust);}
-  .st-packed{background:var(--mustard-bg);color:var(--mustard);}
+  .st-partial{background:var(--mustard-bg);color:var(--mustard);}
   .st-shipped{background:var(--slate-bg);color:var(--slate);}
   .st-delivered{background:var(--forest-bg);color:var(--forest);}
   .st-cancelled{background:var(--gray-bg);color:var(--ink-soft);}
   .rowbtn{
     background:none;border:1px solid var(--line);border-radius:3px;
-    font-family:'IBM Plex Mono',monospace;font-size:0.7rem;
-    padding:0.3rem 0.55rem;cursor:pointer;color:var(--ink-soft);margin-right:0.3rem;
+    font-family:'IBM Plex Mono',monospace;font-size:0.68rem;
+    padding:0.3rem 0.5rem;cursor:pointer;color:var(--ink-soft);margin-right:0.25rem;
   }
   .rowbtn:hover{border-color:var(--ink);color:var(--ink);}
   .empty{padding:2.5rem;text-align:center;color:var(--ink-soft);font-size:0.9rem;}
@@ -141,7 +144,7 @@
   .modal{
     background:var(--paper-raised);
     border:1px solid var(--line);
-    max-width:480px;width:100%;padding:1.75rem;border-radius:4px;
+    max-width:720px;width:100%;padding:1.75rem;border-radius:4px;
   }
   .modal h2{font-family:'Roboto Slab',serif;font-size:1.3rem;margin:0 0 1rem;}
   .field{margin-bottom:0.9rem;}
@@ -151,14 +154,22 @@
     font-family:'Inter',sans-serif;font-size:0.9rem;border-radius:3px;background:var(--paper);
   }
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:0.9rem;}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.9rem;}
   .modal-actions{display:flex;justify-content:flex-end;gap:0.6rem;margin-top:1.25rem;}
   button.ghost{
     background:none;border:1px solid var(--line);padding:0.6rem 1rem;
     border-radius:3px;cursor:pointer;font-family:'Inter',sans-serif;font-size:0.85rem;
   }
-  .pack-detail{border-top:1px dashed var(--line);margin-top:1rem;padding-top:1rem;}
-  .pack-detail .kv{display:flex;justify-content:space-between;font-size:0.85rem;padding:0.25rem 0;}
-  .pack-detail .kv span:first-child{color:var(--ink-soft);}
+  .items-block{border-top:1px dashed var(--line);border-bottom:1px dashed var(--line);margin:1rem 0;padding:1rem 0;}
+  .items-header{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--ink-soft);margin-bottom:0.6rem;}
+  .item-row{display:grid;grid-template-columns:2fr 0.8fr 0.9fr 0.9fr 1fr 32px;gap:0.5rem;align-items:end;margin-bottom:0.6rem;}
+  .item-row label{font-size:0.62rem;text-transform:uppercase;color:var(--ink-soft);display:block;margin-bottom:0.2rem;font-family:'IBM Plex Mono',monospace;}
+  .item-row input, .item-row select{width:100%;padding:0.45rem 0.55rem;border:1px solid var(--line);font-size:0.85rem;border-radius:3px;background:var(--paper);}
+  .item-remove{background:none;border:1px solid var(--line);border-radius:3px;cursor:pointer;color:var(--rust);height:34px;}
+  .add-line{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;background:none;border:1px dashed var(--line);border-radius:3px;padding:0.5rem 0.8rem;cursor:pointer;color:var(--ink-soft);}
+  .add-line:hover{border-color:var(--ink);color:var(--ink);}
+  .ship-row{display:grid;grid-template-columns:2fr 0.8fr 0.8fr 0.9fr 1fr;gap:0.5rem;align-items:center;padding:0.5rem 0;border-bottom:1px solid var(--line);font-size:0.85rem;}
+  .ship-row.head{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;text-transform:uppercase;color:var(--ink-soft);border-bottom:2px solid var(--ink);}
   @media print{
     .toolbar,.filters,header button,.rowbtn{display:none;}
   }
@@ -178,15 +189,15 @@
   <div class="stats" id="stats"></div>
 
   <div class="toolbar">
-    <input class="search" id="search" placeholder="Search order id, customer, or item...">
+    <input class="search" id="search" placeholder="Search order id, PO number, customer, or item...">
     <div class="filters" id="filters"></div>
   </div>
 
   <table>
     <thead>
       <tr>
-        <th>Order ID</th><th>Date</th><th>Customer</th><th>Item</th>
-        <th>Qty</th><th>Unit price</th><th>Total</th><th>Status</th><th>Notes</th><th></th>
+        <th>Order ID</th><th>PO #</th><th>Date</th><th>Customer</th><th>Item</th>
+        <th>Qty</th><th>Shipped</th><th>Remaining</th><th>Unit Price</th><th>Total</th><th>Status</th><th>Notes</th><th></th>
       </tr>
     </thead>
     <tbody id="rows"></tbody>
@@ -197,22 +208,20 @@
 <div class="overlay" id="orderOverlay">
   <div class="modal">
     <h2 id="orderModalTitle">New order</h2>
-    <div class="row2">
+    <div class="row3">
       <div class="field"><label>Customer name</label><input id="f-customer" list="customerList" autocomplete="off"></div>
+      <div class="field"><label>PO number</label><input id="f-po" placeholder="Optional"></div>
       <div class="field"><label>Order date</label><input type="date" id="f-date"></div>
     </div>
-    <div class="field"><label>Item / product</label><input id="f-item" list="itemList" autocomplete="off"></div>
     <datalist id="customerList"></datalist>
     <datalist id="itemList"></datalist>
-    <div class="row2">
-      <div class="field"><label>Quantity</label><input type="number" id="f-qty" min="1" value="1"></div>
-      <div class="field"><label>Unit price quoted</label><input type="number" id="f-price" min="0" step="0.01"></div>
+
+    <div class="items-block">
+      <div class="items-header">Line items</div>
+      <div id="itemRows"></div>
+      <button type="button" class="add-line" id="addLineBtn">+ Add line item</button>
     </div>
-    <div class="field"><label>Status</label>
-      <select id="f-status">
-        <option>Pending</option><option>Packed</option><option>Shipped</option><option>Delivered</option><option>Cancelled</option>
-      </select>
-    </div>
+
     <div class="field"><label>Notes</label><textarea id="f-notes" rows="2"></textarea></div>
     <div class="modal-actions">
       <button class="ghost" id="cancelOrder">Cancel</button>
@@ -221,13 +230,14 @@
   </div>
 </div>
 
-<div class="overlay" id="packOverlay">
-  <div class="modal" style="max-width:520px;">
-    <h2>Packing list</h2>
-    <div id="packBody"></div>
+<div class="overlay" id="shipOverlay">
+  <div class="modal" style="max-width:640px;">
+    <h2 id="shipModalTitle">Update shipped quantities</h2>
+    <div id="shipBody"></div>
     <div class="modal-actions">
-      <button class="ghost" id="printPack">Print</button>
-      <button class="primary" id="closePack">Close</button>
+      <button class="ghost" id="printShip">Print</button>
+      <button class="ghost" id="cancelShip">Cancel</button>
+      <button class="primary" id="saveShip">Save</button>
     </div>
   </div>
 </div>
@@ -249,11 +259,14 @@ const firebaseConfig = {
 const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
 const ordersCol = collection(db, "orders");
-const STATUSES = ["Pending","Packed","Shipped","Delivered","Cancelled"];
+
+const STATUSES = ["Pending","Partial","Shipped","Delivered","Cancelled"];
 let orders = [];
 let activeFilter = "All";
 let searchTerm = "";
 let editingId = null;
+let lineSeq = 0;
+
 function loadOrders(){
   onSnapshot(ordersCol, (snapshot) => {
     orders = snapshot.docs.map(d => d.data());
@@ -263,27 +276,28 @@ function loadOrders(){
   });
 }
 async function saveOrderToDb(o){
-  try{
-    await setDoc(doc(db, "orders", o.id), o);
-  }catch(err){
-    console.error("Failed to save to Firestore", err);
-    alert("Could not save to the database. Check your connection and try again.");
-  }
+  try{ await setDoc(doc(db, "orders", o.id), o); }
+  catch(err){ console.error(err); alert("Could not save to the database. Check your connection and try again."); }
 }
 async function deleteOrderFromDb(id){
-  try{
-    await deleteDoc(doc(db, "orders", id));
-  }catch(err){
-    console.error("Failed to delete from Firestore", err);
-    alert("Could not delete from the database. Check your connection and try again.");
-  }
+  try{ await deleteDoc(doc(db, "orders", id)); }
+  catch(err){ console.error(err); alert("Could not delete from the database. Check your connection and try again."); }
 }
-function fmt(n){ return "₹" + Number(n||0).toLocaleString("en-IN", {maximumFractionDigits:2}); }
+
+function fmt(n){ return "\u20b9" + Number(n||0).toLocaleString("en-IN", {maximumFractionDigits:2}); }
 function nextId(){
   const nums = orders.map(o => parseInt((o.id||"").replace("ORD-",""),10)).filter(n=>!isNaN(n));
   const next = (nums.length ? Math.max(...nums) : 0) + 1;
   return "ORD-" + String(next).padStart(3,"0");
 }
+function itemStatus(it){
+  if (it.status === "Delivered" || it.status === "Cancelled") return it.status;
+  const shipped = Number(it.shippedQty)||0, qty = Number(it.qty)||0;
+  if (shipped <= 0) return "Pending";
+  if (shipped >= qty) return "Shipped";
+  return "Partial";
+}
+function statusClass(s){ return "st-" + s.toLowerCase(); }
 
 function renderFilters(){
   const el = document.getElementById("filters");
@@ -299,163 +313,203 @@ function renderFilters(){
 
 function renderStats(){
   const el = document.getElementById("stats");
-  const total = orders.length;
-  const pendingVal = orders.filter(o=>o.status==="Pending").reduce((s,o)=>s+o.qty*o.price,0);
-  const deliveredCount = orders.filter(o=>o.status==="Delivered").length;
-  const allVal = orders.reduce((s,o)=>s+o.qty*o.price,0);
+  let totalOrders = orders.length, totalLines = 0, pendingVal = 0, deliveredCount = 0, allVal = 0;
+  orders.forEach(o => (o.items||[]).forEach(it => {
+    totalLines++;
+    const st = itemStatus(it);
+    const remaining = Math.max(0, (Number(it.qty)||0) - (Number(it.shippedQty)||0));
+    allVal += (Number(it.qty)||0) * (Number(it.price)||0);
+    if (st === "Pending" || st === "Partial") pendingVal += remaining * (Number(it.price)||0);
+    if (st === "Delivered") deliveredCount++;
+  }));
   el.innerHTML = `
-    <div class="stat"><div class="n">${total}</div><div class="l">Total orders</div></div>
+    <div class="stat"><div class="n">${totalOrders}</div><div class="l">Orders</div></div>
+    <div class="stat"><div class="n">${totalLines}</div><div class="l">Line items</div></div>
     <div class="stat"><div class="n">${fmt(pendingVal)}</div><div class="l">Pending value</div></div>
-    <div class="stat"><div class="n">${deliveredCount}</div><div class="l">Delivered</div></div>
+    <div class="stat"><div class="n">${deliveredCount}</div><div class="l">Delivered lines</div></div>
     <div class="stat"><div class="n">${fmt(allVal)}</div><div class="l">Total value</div></div>
   `;
 }
 
-function statusClass(s){ return "st-" + s.toLowerCase(); }
-
-function populateDatalists(){
-  const customers = [...new Set(orders.map(o=>o.customer).filter(Boolean))].sort();
-  const items = [...new Set(orders.map(o=>o.item).filter(Boolean))].sort();
-  document.getElementById("customerList").innerHTML = customers.map(c=>`<option value="${c}">`).join("");
-  document.getElementById("itemList").innerHTML = items.map(i=>`<option value="${i}">`).join("");
+function orderMatches(o){
+  if (!searchTerm) return true;
+  const t = searchTerm.toLowerCase();
+  if ((o.id+" "+(o.poNumber||"")+" "+o.customer).toLowerCase().includes(t)) return true;
+  return (o.items||[]).some(it => (it.item||"").toLowerCase().includes(t));
 }
 
 function renderRows(){
   const tbody = document.getElementById("rows");
-  let list = orders.filter(o => activeFilter==="All" || o.status===activeFilter);
-  if (searchTerm){
-    const t = searchTerm.toLowerCase();
-    list = list.filter(o => (o.id+o.customer+o.item).toLowerCase().includes(t));
-  }
-  document.getElementById("emptyMsg").style.display = list.length ? "none":"block";
-  tbody.innerHTML = list.map(o => `
-    <tr>
-      <td class="oid">${o.id}</td>
-      <td>${o.date}</td>
-      <td>${o.customer}</td>
-      <td>${o.item}</td>
-      <td>${o.qty}</td>
-      <td>${fmt(o.price)}</td>
-      <td>${fmt(o.qty*o.price)}</td>
-      <td>
-        <select class="badge ${statusClass(o.status)}" onchange="changeStatus('${o.id}', this.value)">
-          ${STATUSES.map(s=>`<option ${s===o.status?"selected":""}>${s}</option>`).join("")}
-        </select>
-      </td>
-      <td style="max-width:160px;font-size:0.8rem;color:var(--ink-soft);">${o.notes||""}</td>
-      <td style="white-space:nowrap;">
-        <button class="rowbtn" onclick="openEdit('${o.id}')">Edit</button>
-        <button class="rowbtn" onclick="openPack('${o.id}')">Pack</button>
-        <button class="rowbtn" onclick="deleteOrder('${o.id}')">Delete</button>
-      </td>
-    </tr>
-  `).join("");
+  const visible = orders.filter(orderMatches);
+  let html = "";
+  let anyRows = false;
+  visible.forEach(o => {
+    const items = (o.items||[]).filter(it => activeFilter==="All" || itemStatus(it)===activeFilter);
+    if (!items.length) return;
+    items.forEach((it, idx) => {
+      anyRows = true;
+      const st = itemStatus(it);
+      const remaining = Math.max(0, (Number(it.qty)||0) - (Number(it.shippedQty)||0));
+      const isFirst = idx === 0;
+      html += `<tr class="${isFirst ? "group-start" : ""}">
+        <td class="oid">${isFirst ? o.id : ""}</td>
+        <td>${isFirst ? (o.poNumber||"\u2014") : ""}</td>
+        <td>${isFirst ? o.date : ""}</td>
+        <td>${isFirst ? o.customer : ""}</td>
+        <td>${it.item}</td>
+        <td>${it.qty}</td>
+        <td>${it.shippedQty||0}</td>
+        <td>${remaining}</td>
+        <td>${fmt(it.price)}</td>
+        <td>${fmt((it.qty||0)*(it.price||0))}</td>
+        <td><span class="badge ${statusClass(st)}">${st}</span></td>
+        <td class="muted" style="max-width:140px;font-size:0.78rem;">${isFirst ? (o.notes||"") : ""}</td>
+        <td style="white-space:nowrap;">${isFirst ? `
+          <button class="rowbtn" onclick="window.openEdit('${o.id}')">Edit</button>
+          <button class="rowbtn" onclick="window.openShip('${o.id}')">Ship</button>
+          <button class="rowbtn" onclick="window.deleteOrder('${o.id}')">Delete</button>
+        ` : ""}</td>
+      </tr>`;
+    });
+  });
+  document.getElementById("emptyMsg").style.display = anyRows ? "none" : "block";
+  tbody.innerHTML = html;
+}
+
+function populateDatalists(){
+  const customers = [...new Set(orders.map(o=>o.customer).filter(Boolean))].sort();
+  const items = [...new Set(orders.flatMap(o=>(o.items||[]).map(it=>it.item)).filter(Boolean))].sort();
+  document.getElementById("customerList").innerHTML = customers.map(c=>`<option value="${c}">`).join("");
+  document.getElementById("itemList").innerHTML = items.map(i=>`<option value="${i}">`).join("");
 }
 
 function render(){ renderFilters(); renderStats(); renderRows(); populateDatalists(); }
 
-function changeStatus(id, status){
-  const o = orders.find(x=>x.id===id);
-  if(o){ o.status = status; saveOrderToDb(o); }
-}
-function deleteOrder(id){
-  if(!confirm("Delete order " + id + "?")) return;
+window.deleteOrder = function(id){
+  if(!confirm("Delete order " + id + " and all its line items?")) return;
   deleteOrderFromDb(id);
-}
+};
 
 document.getElementById("search").addEventListener("input", e=>{
   searchTerm = e.target.value; renderRows();
 });
 
+// ---- New / Edit order modal ----
 const orderOverlay = document.getElementById("orderOverlay");
+const itemRowsEl = document.getElementById("itemRows");
+
+function addLineRow(data){
+  const id = "line" + (lineSeq++);
+  const row = document.createElement("div");
+  row.className = "item-row";
+  row.dataset.rowId = id;
+  row.innerHTML = `
+    <div><label>Item / part number</label><input class="li-item" list="itemList" autocomplete="off" value="${data && data.item ? data.item : ""}"></div>
+    <div><label>Qty</label><input class="li-qty" type="number" min="0" value="${data && data.qty!=null ? data.qty : 1}"></div>
+    <div><label>Unit price</label><input class="li-price" type="number" min="0" step="0.01" value="${data && data.price!=null ? data.price : ""}"></div>
+    <div><label>Shipped qty</label><input class="li-shipped" type="number" min="0" value="${data && data.shippedQty!=null ? data.shippedQty : 0}"></div>
+    <div><label>Status</label>
+      <select class="li-status">
+        ${STATUSES.map(s=>`<option ${data && data.status===s ? "selected":""}>${s}</option>`).join("")}
+      </select>
+    </div>
+    <button type="button" class="item-remove" title="Remove line">\u2715</button>
+  `;
+  row.querySelector(".item-remove").onclick = () => row.remove();
+  itemRowsEl.appendChild(row);
+}
+document.getElementById("addLineBtn").onclick = () => addLineRow();
+
+function readLineRows(){
+  return [...itemRowsEl.querySelectorAll(".item-row")].map(row => {
+    const item = row.querySelector(".li-item").value.trim();
+    const qty = Number(row.querySelector(".li-qty").value)||0;
+    const price = Number(row.querySelector(".li-price").value)||0;
+    const shippedQty = Number(row.querySelector(".li-shipped").value)||0;
+    const status = row.querySelector(".li-status").value;
+    return { item, qty, price, shippedQty, status };
+  }).filter(it => it.item);
+}
+
 document.getElementById("newOrderBtn").onclick = () => {
   editingId = null;
   document.getElementById("orderModalTitle").textContent = "New order";
   document.getElementById("f-customer").value = "";
+  document.getElementById("f-po").value = "";
   document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
-  document.getElementById("f-item").value = "";
-  document.getElementById("f-qty").value = 1;
-  document.getElementById("f-price").value = "";
-  document.getElementById("f-status").value = "Pending";
   document.getElementById("f-notes").value = "";
+  itemRowsEl.innerHTML = "";
+  addLineRow();
   orderOverlay.classList.add("show");
 };
-function openEdit(id){
+
+window.openEdit = function(id){
   const o = orders.find(x=>x.id===id);
   if(!o) return;
   editingId = id;
   document.getElementById("orderModalTitle").textContent = "Edit order " + o.id;
   document.getElementById("f-customer").value = o.customer;
+  document.getElementById("f-po").value = o.poNumber || "";
   document.getElementById("f-date").value = o.date;
-  document.getElementById("f-item").value = o.item;
-  document.getElementById("f-qty").value = o.qty;
-  document.getElementById("f-price").value = o.price;
-  document.getElementById("f-status").value = o.status;
   document.getElementById("f-notes").value = o.notes || "";
+  itemRowsEl.innerHTML = "";
+  (o.items && o.items.length ? o.items : [{}]).forEach(it => addLineRow(it));
   orderOverlay.classList.add("show");
-}
+};
+
 document.getElementById("cancelOrder").onclick = () => { orderOverlay.classList.remove("show"); editingId = null; };
 document.getElementById("saveOrder").onclick = () => {
   const customer = document.getElementById("f-customer").value.trim();
-  const item = document.getElementById("f-item").value.trim();
-  if(!customer || !item){ alert("Customer name and item are required."); return; }
+  const items = readLineRows();
+  if(!customer){ alert("Customer name is required."); return; }
+  if(!items.length){ alert("Add at least one line item."); return; }
   const date = document.getElementById("f-date").value || new Date().toISOString().slice(0,10);
-  const qty = Number(document.getElementById("f-qty").value)||0;
-  const price = Number(document.getElementById("f-price").value)||0;
-  const status = document.getElementById("f-status").value;
+  const poNumber = document.getElementById("f-po").value.trim();
   const notes = document.getElementById("f-notes").value.trim();
 
-  if (editingId){
-    const o = orders.find(x=>x.id===editingId);
-    if(o){
-      o.date = date; o.customer = customer; o.item = item;
-      o.qty = qty; o.price = price; o.status = status; o.notes = notes;
-      saveOrderToDb(o);
-    }
-  } else {
-    const newOrder = { id: nextId(), date, customer, item, qty, price, status, notes,
-      packedQty:0, packedBy:"", datePacked:"" };
-    saveOrderToDb(newOrder);
-  }
+  const order = {
+    id: editingId || nextId(),
+    poNumber, date, customer, notes, items
+  };
+  saveOrderToDb(order);
   editingId = null;
   orderOverlay.classList.remove("show");
 };
 
-const packOverlay = document.getElementById("packOverlay");
-let packingId = null;
-function openPack(id){
-  packingId = id;
+// ---- Ship modal ----
+const shipOverlay = document.getElementById("shipOverlay");
+let shippingId = null;
+window.openShip = function(id){
+  shippingId = id;
   const o = orders.find(x=>x.id===id);
-  document.getElementById("packBody").innerHTML = `
-    <div class="pack-detail">
-      <div class="kv"><span>Order ID</span><span>${o.id}</span></div>
-      <div class="kv"><span>Customer</span><span>${o.customer}</span></div>
-      <div class="kv"><span>Item</span><span>${o.item}</span></div>
-      <div class="kv"><span>Quantity</span><span>${o.qty}</span></div>
-      <div class="kv"><span>Total</span><span>${fmt(o.qty*o.price)}</span></div>
-      <div class="kv"><span>Status</span><span>${o.status}</span></div>
-    </div>
-    <div class="pack-detail">
-      <div class="field"><label>Packed quantity</label><input type="number" id="p-qty" value="${o.packedQty||0}" min="0"></div>
-      <div class="row2">
-        <div class="field"><label>Packed by</label><input id="p-by" value="${o.packedBy||""}"></div>
-        <div class="field"><label>Date packed</label><input type="date" id="p-date" value="${o.datePacked||""}"></div>
-      </div>
-    </div>
-  `;
-  packOverlay.classList.add("show");
-}
-document.getElementById("closePack").onclick = () => {
-  const o = orders.find(x=>x.id===packingId);
-  if(o){
-    o.packedQty = Number(document.getElementById("p-qty").value)||0;
-    o.packedBy = document.getElementById("p-by").value.trim();
-    o.datePacked = document.getElementById("p-date").value;
-    saveOrderToDb(o);
-  }
-  packOverlay.classList.remove("show");
+  if(!o) return;
+  document.getElementById("shipModalTitle").textContent = "Update shipped quantities \u2014 " + o.id;
+  const body = document.getElementById("shipBody");
+  body.innerHTML = `<div class="ship-row head"><span>Item</span><span>Ordered</span><span>Shipped</span><span>Remaining</span><span>New shipped qty</span></div>` +
+    (o.items||[]).map((it, i) => {
+      const remaining = Math.max(0,(it.qty||0)-(it.shippedQty||0));
+      return `<div class="ship-row" data-idx="${i}">
+        <span>${it.item}</span><span>${it.qty}</span><span>${it.shippedQty||0}</span><span>${remaining}</span>
+        <input type="number" class="ship-input" min="0" max="${it.qty}" value="${it.shippedQty||0}">
+      </div>`;
+    }).join("");
+  shipOverlay.classList.add("show");
 };
-document.getElementById("printPack").onclick = () => window.print();
+document.getElementById("cancelShip").onclick = () => shipOverlay.classList.remove("show");
+document.getElementById("printShip").onclick = () => window.print();
+document.getElementById("saveShip").onclick = () => {
+  const o = orders.find(x=>x.id===shippingId);
+  if(!o) return;
+  const rows = [...document.querySelectorAll("#shipBody .ship-row[data-idx]")];
+  rows.forEach(row => {
+    const idx = Number(row.dataset.idx);
+    const val = Number(row.querySelector(".ship-input").value)||0;
+    o.items[idx].shippedQty = Math.min(val, o.items[idx].qty);
+    o.items[idx].status = itemStatus(o.items[idx]);
+  });
+  saveOrderToDb(o);
+  shipOverlay.classList.remove("show");
+};
 
 loadOrders();
 </script>
