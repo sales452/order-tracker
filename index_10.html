@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EEEEE3;
+    --paper-raised:#FFFFFC;
+    --ink:#1E2A38;
+    --ink-soft:#4C5A6B;
+    --line:#D8D5C6;
+    --rust:#B33A2E;
+    --rust-bg:#F6E2DE;
+    --mustard:#B87B15;
+    --mustard-bg:#F5E7CB;
+    --slate:#3A5A78;
+    --slate-bg:#DEE7EE;
+    --forest:#3F6B4F;
+    --forest-bg:#DEE9E1;
+    --gray-bg:#E4E2D8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    padding:2.5rem 1.5rem 4rem;
+  }
+  .wrap{max-width:1080px;margin:0 auto;}
+  header{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:1rem;margin-bottom:0;
+  }
+  h1{
+    font-family:'Roboto Slab',serif;
+    font-weight:700;
+    font-size:2rem;
+    margin:0;
+    letter-spacing:-0.5px;
+  }
+  .tag{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.75rem;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    letter-spacing:1px;
+  }
+  .perf{
+    height:0;border-bottom:1px dashed var(--line);
+    margin:0 0 1.5rem;
+  }
+  .toolbar{
+    display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;
+    margin:1.25rem 0 1.5rem;
+  }
+  .search{
+    flex:1;min-width:200px;
+    padding:0.6rem 0.9rem;
+    border:1px solid var(--line);
+    background:var(--paper-raised);
+    font-family:'Inter',sans-serif;
+    font-size:0.9rem;
+    border-radius:3px;
+  }
+  .filters{display:flex;gap:0.4rem;flex-wrap:wrap;}
+  .filter-btn{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;
+    padding:0.45rem 0.75rem;
+    border:1px solid var(--line);
+    background:var(--paper-raised);
+    color:var(--ink-soft);
+    cursor:pointer;border-radius:3px;
+  }
+  .filter-btn.active{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  button.primary{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.8rem;
+    background:var(--ink);color:var(--paper);
+    border:none;padding:0.65rem 1.1rem;
+    cursor:pointer;border-radius:3px;
+    text-transform:uppercase;letter-spacing:0.5px;
+  }
+  button.primary:hover{background:var(--rust);}
+  .stats{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:1px;background:var(--line);
+    border:1px solid var(--line);
+    margin-bottom:1.5rem;
+  }
+  .stat{background:var(--paper-raised);padding:0.9rem 1rem;}
+  .stat .n{font-family:'Roboto Slab',serif;font-size:1.5rem;font-weight:700;}
+  .stat .l{font-size:0.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.5px;}
+  table{width:100%;border-collapse:collapse;background:var(--paper-raised);}
+  thead th{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.68rem;text-transform:uppercase;letter-spacing:0.5px;
+    color:var(--ink-soft);
+    text-align:left;padding:0.6rem 0.7rem;
+    border-bottom:2px solid var(--ink);
+  }
+  tbody td{
+    padding:0.7rem;
+    border-bottom:1px solid var(--line);
+    font-size:0.88rem;
+    vertical-align:middle;
+  }
+  tbody tr:hover{background:#F7F6EF;}
+  .oid{font-family:'IBM Plex Mono',monospace;font-weight:500;}
+  .badge{
+    display:inline-block;font-family:'IBM Plex Mono',monospace;
+    font-size:0.68rem;text-transform:uppercase;letter-spacing:0.5px;
+    padding:0.25rem 0.55rem;border-radius:2px;font-weight:500;
+    cursor:pointer;border:none;
+  }
+  .st-pending{background:var(--rust-bg);color:var(--rust);}
+  .st-packed{background:var(--mustard-bg);color:var(--mustard);}
+  .st-shipped{background:var(--slate-bg);color:var(--slate);}
+  .st-delivered{background:var(--forest-bg);color:var(--forest);}
+  .st-cancelled{background:var(--gray-bg);color:var(--ink-soft);}
+  .rowbtn{
+    background:none;border:1px solid var(--line);border-radius:3px;
+    font-family:'IBM Plex Mono',monospace;font-size:0.7rem;
+    padding:0.3rem 0.55rem;cursor:pointer;color:var(--ink-soft);margin-right:0.3rem;
+  }
+  .rowbtn:hover{border-color:var(--ink);color:var(--ink);}
+  .empty{padding:2.5rem;text-align:center;color:var(--ink-soft);font-size:0.9rem;}
+  .overlay{
+    position:fixed;inset:0;background:rgba(30,42,56,0.45);
+    display:none;align-items:flex-start;justify-content:center;
+    padding:3rem 1rem;overflow:auto;z-index:50;
+  }
+  .overlay.show{display:flex;}
+  .modal{
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    max-width:480px;width:100%;padding:1.75rem;border-radius:4px;
+  }
+  .modal h2{font-family:'Roboto Slab',serif;font-size:1.3rem;margin:0 0 1rem;}
+  .field{margin-bottom:0.9rem;}
+  .field label{display:block;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--ink-soft);margin-bottom:0.3rem;font-family:'IBM Plex Mono',monospace;}
+  .field input, .field select, .field textarea{
+    width:100%;padding:0.55rem 0.7rem;border:1px solid var(--line);
+    font-family:'Inter',sans-serif;font-size:0.9rem;border-radius:3px;background:var(--paper);
+  }
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:0.9rem;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:0.6rem;margin-top:1.25rem;}
+  button.ghost{
+    background:none;border:1px solid var(--line);padding:0.6rem 1rem;
+    border-radius:3px;cursor:pointer;font-family:'Inter',sans-serif;font-size:0.85rem;
+  }
+  .pack-detail{border-top:1px dashed var(--line);margin-top:1rem;padding-top:1rem;}
+  .pack-detail .kv{display:flex;justify-content:space-between;font-size:0.85rem;padding:0.25rem 0;}
+  .pack-detail .kv span:first-child{color:var(--ink-soft);}
+  @media print{
+    .toolbar,.filters,header button,.rowbtn{display:none;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Order Tracker</h1>
+      <div class="tag">dispatch &amp; packing ledger</div>
+    </div>
+    <button class="primary" id="newOrderBtn">+ New order</button>
+  </header>
+  <div class="perf"></div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="toolbar">
+    <input class="search" id="search" placeholder="Search order id, customer, or item...">
+    <div class="filters" id="filters"></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Order ID</th><th>Date</th><th>Customer</th><th>Item</th>
+        <th>Qty</th><th>Unit price</th><th>Total</th><th>Status</th><th>Notes</th><th></th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="empty" id="emptyMsg" style="display:none;">No orders yet. Add your first order to get started.</div>
+</div>
+
+<div class="overlay" id="orderOverlay">
+  <div class="modal">
+    <h2>New order</h2>
+    <div class="row2">
+      <div class="field"><label>Customer name</label><input id="f-customer"></div>
+      <div class="field"><label>Order date</label><input type="date" id="f-date"></div>
+    </div>
+    <div class="field"><label>Item / product</label><input id="f-item"></div>
+    <div class="row2">
+      <div class="field"><label>Quantity</label><input type="number" id="f-qty" min="1" value="1"></div>
+      <div class="field"><label>Unit price quoted</label><input type="number" id="f-price" min="0" step="0.01"></div>
+    </div>
+    <div class="field"><label>Status</label>
+      <select id="f-status">
+        <option>Pending</option><option>Packed</option><option>Shipped</option><option>Delivered</option><option>Cancelled</option>
+      </select>
+    </div>
+    <div class="field"><label>Notes</label><textarea id="f-notes" rows="2"></textarea></div>
+    <div class="modal-actions">
+      <button class="ghost" id="cancelOrder">Cancel</button>
+      <button class="primary" id="saveOrder">Save order</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="packOverlay">
+  <div class="modal" style="max-width:520px;">
+    <h2>Packing list</h2>
+    <div id="packBody"></div>
+    <div class="modal-actions">
+      <button class="ghost" id="printPack">Print</button>
+      <button class="primary" id="closePack">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STATUSES = ["Pending","Packed","Shipped","Delivered","Cancelled"];
+const STORE_KEY = "order-tracker.orders";
+let orders = JSON.parse(localStorage.getItem(STORE_KEY) || "[]");
+let activeFilter = "All";
+let searchTerm = "";
+
+function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(orders)); render(); }
+function fmt(n){ return "₹" + Number(n||0).toLocaleString("en-IN", {maximumFractionDigits:2}); }
+function nextId(){
+  const nums = orders.map(o => parseInt((o.id||"").replace("ORD-",""),10)).filter(n=>!isNaN(n));
+  const next = (nums.length ? Math.max(...nums) : 0) + 1;
+  return "ORD-" + String(next).padStart(3,"0");
+}
+
+function renderFilters(){
+  const el = document.getElementById("filters");
+  el.innerHTML = "";
+  ["All", ...STATUSES].forEach(s => {
+    const b = document.createElement("button");
+    b.className = "filter-btn" + (activeFilter===s ? " active":"");
+    b.textContent = s;
+    b.onclick = () => { activeFilter = s; render(); };
+    el.appendChild(b);
+  });
+}
+
+function renderStats(){
+  const el = document.getElementById("stats");
+  const total = orders.length;
+  const pendingVal = orders.filter(o=>o.status==="Pending").reduce((s,o)=>s+o.qty*o.price,0);
+  const deliveredCount = orders.filter(o=>o.status==="Delivered").length;
+  const allVal = orders.reduce((s,o)=>s+o.qty*o.price,0);
+  el.innerHTML = `
+    <div class="stat"><div class="n">${total}</div><div class="l">Total orders</div></div>
+    <div class="stat"><div class="n">${fmt(pendingVal)}</div><div class="l">Pending value</div></div>
+    <div class="stat"><div class="n">${deliveredCount}</div><div class="l">Delivered</div></div>
+    <div class="stat"><div class="n">${fmt(allVal)}</div><div class="l">Total value</div></div>
+  `;
+}
+
+function statusClass(s){ return "st-" + s.toLowerCase(); }
+
+function renderRows(){
+  const tbody = document.getElementById("rows");
+  let list = orders.filter(o => activeFilter==="All" || o.status===activeFilter);
+  if (searchTerm){
+    const t = searchTerm.toLowerCase();
+    list = list.filter(o => (o.id+o.customer+o.item).toLowerCase().includes(t));
+  }
+  document.getElementById("emptyMsg").style.display = list.length ? "none":"block";
+  tbody.innerHTML = list.map(o => `
+    <tr>
+      <td class="oid">${o.id}</td>
+      <td>${o.date}</td>
+      <td>${o.customer}</td>
+      <td>${o.item}</td>
+      <td>${o.qty}</td>
+      <td>${fmt(o.price)}</td>
+      <td>${fmt(o.qty*o.price)}</td>
+      <td>
+        <select class="badge ${statusClass(o.status)}" onchange="changeStatus('${o.id}', this.value)">
+          ${STATUSES.map(s=>`<option ${s===o.status?"selected":""}>${s}</option>`).join("")}
+        </select>
+      </td>
+      <td style="max-width:160px;font-size:0.8rem;color:var(--ink-soft);">${o.notes||""}</td>
+      <td style="white-space:nowrap;">
+        <button class="rowbtn" onclick="openPack('${o.id}')">Pack</button>
+        <button class="rowbtn" onclick="deleteOrder('${o.id}')">Delete</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function render(){ renderFilters(); renderStats(); renderRows(); }
+
+function changeStatus(id, status){
+  const o = orders.find(x=>x.id===id);
+  if(o){ o.status = status; save(); }
+}
+function deleteOrder(id){
+  if(!confirm("Delete order " + id + "?")) return;
+  orders = orders.filter(o=>o.id!==id);
+  save();
+}
+
+document.getElementById("search").addEventListener("input", e=>{
+  searchTerm = e.target.value; renderRows();
+});
+
+const orderOverlay = document.getElementById("orderOverlay");
+document.getElementById("newOrderBtn").onclick = () => {
+  document.getElementById("f-customer").value = "";
+  document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
+  document.getElementById("f-item").value = "";
+  document.getElementById("f-qty").value = 1;
+  document.getElementById("f-price").value = "";
+  document.getElementById("f-status").value = "Pending";
+  document.getElementById("f-notes").value = "";
+  orderOverlay.classList.add("show");
+};
+document.getElementById("cancelOrder").onclick = () => orderOverlay.classList.remove("show");
+document.getElementById("saveOrder").onclick = () => {
+  const customer = document.getElementById("f-customer").value.trim();
+  const item = document.getElementById("f-item").value.trim();
+  if(!customer || !item){ alert("Customer name and item are required."); return; }
+  orders.push({
+    id: nextId(),
+    date: document.getElementById("f-date").value || new Date().toISOString().slice(0,10),
+    customer, item,
+    qty: Number(document.getElementById("f-qty").value)||0,
+    price: Number(document.getElementById("f-price").value)||0,
+    status: document.getElementById("f-status").value,
+    notes: document.getElementById("f-notes").value.trim(),
+    packedQty:0, packedBy:"", datePacked:""
+  });
+  orderOverlay.classList.remove("show");
+  save();
+};
+
+const packOverlay = document.getElementById("packOverlay");
+let packingId = null;
+function openPack(id){
+  packingId = id;
+  const o = orders.find(x=>x.id===id);
+  document.getElementById("packBody").innerHTML = `
+    <div class="pack-detail">
+      <div class="kv"><span>Order ID</span><span>${o.id}</span></div>
+      <div class="kv"><span>Customer</span><span>${o.customer}</span></div>
+      <div class="kv"><span>Item</span><span>${o.item}</span></div>
+      <div class="kv"><span>Quantity</span><span>${o.qty}</span></div>
+      <div class="kv"><span>Total</span><span>${fmt(o.qty*o.price)}</span></div>
+      <div class="kv"><span>Status</span><span>${o.status}</span></div>
+    </div>
+    <div class="pack-detail">
+      <div class="field"><label>Packed quantity</label><input type="number" id="p-qty" value="${o.packedQty||0}" min="0"></div>
+      <div class="row2">
+        <div class="field"><label>Packed by</label><input id="p-by" value="${o.packedBy||""}"></div>
+        <div class="field"><label>Date packed</label><input type="date" id="p-date" value="${o.datePacked||""}"></div>
+      </div>
+    </div>
+  `;
+  packOverlay.classList.add("show");
+}
+document.getElementById("closePack").onclick = () => {
+  const o = orders.find(x=>x.id===packingId);
+  if(o){
+    o.packedQty = Number(document.getElementById("p-qty").value)||0;
+    o.packedBy = document.getElementById("p-by").value.trim();
+    o.datePacked = document.getElementById("p-date").value;
+    save();
+  }
+  packOverlay.classList.remove("show");
+};
+document.getElementById("printPack").onclick = () => window.print();
+
+render();
+</script>
+</body>
+</html>
