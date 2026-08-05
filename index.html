@@ -196,12 +196,14 @@
 
 <div class="overlay" id="orderOverlay">
   <div class="modal">
-    <h2>New order</h2>
+    <h2 id="orderModalTitle">New order</h2>
     <div class="row2">
-      <div class="field"><label>Customer name</label><input id="f-customer"></div>
+      <div class="field"><label>Customer name</label><input id="f-customer" list="customerList" autocomplete="off"></div>
       <div class="field"><label>Order date</label><input type="date" id="f-date"></div>
     </div>
-    <div class="field"><label>Item / product</label><input id="f-item"></div>
+    <div class="field"><label>Item / product</label><input id="f-item" list="itemList" autocomplete="off"></div>
+    <datalist id="customerList"></datalist>
+    <datalist id="itemList"></datalist>
     <div class="row2">
       <div class="field"><label>Quantity</label><input type="number" id="f-qty" min="1" value="1"></div>
       <div class="field"><label>Unit price quoted</label><input type="number" id="f-price" min="0" step="0.01"></div>
@@ -236,6 +238,7 @@ const STORE_KEY = "order-tracker.orders";
 let orders = JSON.parse(localStorage.getItem(STORE_KEY) || "[]");
 let activeFilter = "All";
 let searchTerm = "";
+let editingId = null;
 
 function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(orders)); render(); }
 function fmt(n){ return "₹" + Number(n||0).toLocaleString("en-IN", {maximumFractionDigits:2}); }
@@ -273,6 +276,13 @@ function renderStats(){
 
 function statusClass(s){ return "st-" + s.toLowerCase(); }
 
+function populateDatalists(){
+  const customers = [...new Set(orders.map(o=>o.customer).filter(Boolean))].sort();
+  const items = [...new Set(orders.map(o=>o.item).filter(Boolean))].sort();
+  document.getElementById("customerList").innerHTML = customers.map(c=>`<option value="${c}">`).join("");
+  document.getElementById("itemList").innerHTML = items.map(i=>`<option value="${i}">`).join("");
+}
+
 function renderRows(){
   const tbody = document.getElementById("rows");
   let list = orders.filter(o => activeFilter==="All" || o.status===activeFilter);
@@ -297,6 +307,7 @@ function renderRows(){
       </td>
       <td style="max-width:160px;font-size:0.8rem;color:var(--ink-soft);">${o.notes||""}</td>
       <td style="white-space:nowrap;">
+        <button class="rowbtn" onclick="openEdit('${o.id}')">Edit</button>
         <button class="rowbtn" onclick="openPack('${o.id}')">Pack</button>
         <button class="rowbtn" onclick="deleteOrder('${o.id}')">Delete</button>
       </td>
@@ -304,7 +315,7 @@ function renderRows(){
   `).join("");
 }
 
-function render(){ renderFilters(); renderStats(); renderRows(); }
+function render(){ renderFilters(); renderStats(); renderRows(); populateDatalists(); }
 
 function changeStatus(id, status){
   const o = orders.find(x=>x.id===id);
@@ -322,6 +333,8 @@ document.getElementById("search").addEventListener("input", e=>{
 
 const orderOverlay = document.getElementById("orderOverlay");
 document.getElementById("newOrderBtn").onclick = () => {
+  editingId = null;
+  document.getElementById("orderModalTitle").textContent = "New order";
   document.getElementById("f-customer").value = "";
   document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
   document.getElementById("f-item").value = "";
@@ -331,21 +344,44 @@ document.getElementById("newOrderBtn").onclick = () => {
   document.getElementById("f-notes").value = "";
   orderOverlay.classList.add("show");
 };
-document.getElementById("cancelOrder").onclick = () => orderOverlay.classList.remove("show");
+function openEdit(id){
+  const o = orders.find(x=>x.id===id);
+  if(!o) return;
+  editingId = id;
+  document.getElementById("orderModalTitle").textContent = "Edit order " + o.id;
+  document.getElementById("f-customer").value = o.customer;
+  document.getElementById("f-date").value = o.date;
+  document.getElementById("f-item").value = o.item;
+  document.getElementById("f-qty").value = o.qty;
+  document.getElementById("f-price").value = o.price;
+  document.getElementById("f-status").value = o.status;
+  document.getElementById("f-notes").value = o.notes || "";
+  orderOverlay.classList.add("show");
+}
+document.getElementById("cancelOrder").onclick = () => { orderOverlay.classList.remove("show"); editingId = null; };
 document.getElementById("saveOrder").onclick = () => {
   const customer = document.getElementById("f-customer").value.trim();
   const item = document.getElementById("f-item").value.trim();
   if(!customer || !item){ alert("Customer name and item are required."); return; }
-  orders.push({
-    id: nextId(),
-    date: document.getElementById("f-date").value || new Date().toISOString().slice(0,10),
-    customer, item,
-    qty: Number(document.getElementById("f-qty").value)||0,
-    price: Number(document.getElementById("f-price").value)||0,
-    status: document.getElementById("f-status").value,
-    notes: document.getElementById("f-notes").value.trim(),
-    packedQty:0, packedBy:"", datePacked:""
-  });
+  const date = document.getElementById("f-date").value || new Date().toISOString().slice(0,10);
+  const qty = Number(document.getElementById("f-qty").value)||0;
+  const price = Number(document.getElementById("f-price").value)||0;
+  const status = document.getElementById("f-status").value;
+  const notes = document.getElementById("f-notes").value.trim();
+
+  if (editingId){
+    const o = orders.find(x=>x.id===editingId);
+    if(o){
+      o.date = date; o.customer = customer; o.item = item;
+      o.qty = qty; o.price = price; o.status = status; o.notes = notes;
+    }
+  } else {
+    orders.push({
+      id: nextId(), date, customer, item, qty, price, status, notes,
+      packedQty:0, packedBy:"", datePacked:""
+    });
+  }
+  editingId = null;
   orderOverlay.classList.remove("show");
   save();
 };
