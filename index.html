@@ -128,6 +128,7 @@
   .supplier-cell{text-align:center;white-space:nowrap;}
   body.hide-weight-cols .col-weight{display:none;}
   body.hide-supplier-cols .col-supplier{display:none;}
+  body.hide-extra-cols .col-extra{display:none;}
   .col-toggle-btn{
     font-family:'IBM Plex Mono',monospace;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;
     padding:0.45rem 0.7rem;border:1px solid var(--line);border-radius:3px;
@@ -321,6 +322,8 @@
     <select class="staff-filter" id="staffFilter" style="display:none;"><option value="">All staff</option></select>
     <button type="button" class="col-toggle-btn" id="toggleWeightCols">Weight cols</button>
     <button type="button" class="col-toggle-btn" id="toggleSupplierCols">Supplier cols</button>
+    <button type="button" class="col-toggle-btn" id="toggleExtraCols">More cols</button>
+    <button type="button" class="col-toggle-btn" id="trashToggleBtn">&#128465; Trash</button>
     <div class="filters" id="filters"></div>
   </div>
 
@@ -328,8 +331,8 @@
   <table>
     <thead>
       <tr>
-        <th>Order ID</th><th>PO #</th><th>Date</th><th>Customer</th><th style="background:var(--slate-bg);">Order Total</th><th style="background:var(--slate-bg);">Order Wt</th><th>Item</th>
-        <th>Qty</th><th class="col-weight">Wt/Unit</th><th class="col-weight">Total Wt</th><th>Shipped</th><th>Remaining</th><th>Unit Price</th><th>Total</th><th class="col-supplier" title="Tick this when you place the order with the supplier">&#9745; To Supplier</th><th class="col-supplier" title="Live clock &#8212; starts counting the moment you tick 'To Supplier'">&#9201; Waiting On Supplier</th><th>Ready</th><th>Status</th><th id="thEnteredBy" style="display:none;">Entered By</th><th>Notes</th><th></th>
+        <th>Order ID</th><th class="col-extra">PO #</th><th>Date</th><th>Customer</th><th style="background:var(--slate-bg);">Order Total</th><th style="background:var(--slate-bg);">Order Wt</th><th>Item</th>
+        <th>Qty</th><th class="col-weight">Wt/Unit</th><th class="col-weight">Total Wt</th><th class="col-extra">Shipped</th><th class="col-extra">Remaining</th><th>Unit Price</th><th>Total</th><th class="col-supplier" title="Tick this when you place the order with the supplier">&#9745; To Supplier</th><th class="col-supplier" title="Live clock &#8212; starts counting the moment you tick 'To Supplier'">&#9201; Waiting On Supplier</th><th>Ready</th><th>Status</th><th id="thEnteredBy" style="display:none;">Entered By</th><th class="col-extra">Notes</th><th></th>
       </tr>
     </thead>
     <tbody id="rows"></tbody>
@@ -434,6 +437,7 @@ let searchTerm = "";
 let editingId = null;
 let lineSeq = 0;
 let staffFilterValue = "";
+let viewMode = "active"; // "active" | "trash"
 
 // ---- Accounts (real Firebase Authentication) ----
 // Roles/names are derived from a fixed username -> email mapping. Access to
@@ -617,9 +621,10 @@ function renderFilters(){
 
 function renderStats(){
   const el = document.getElementById("stats");
-  let totalOrders = orders.length, totalLines = 0, deliveredCount = 0, totalWeight = 0;
+  const activeOrders = orders.filter(o => !o.deletedAt);
+  let totalOrders = activeOrders.length, totalLines = 0, deliveredCount = 0, totalWeight = 0;
   const pendingByCcy = {}, allByCcy = {};
-  orders.forEach(o => {
+  activeOrders.forEach(o => {
     const ccy = o.currency || "INR";
     (o.items||[]).forEach(it => {
       totalLines++;
@@ -645,6 +650,8 @@ function renderStats(){
 }
 
 function orderMatches(o){
+  const isTrashed = !!o.deletedAt;
+  if (viewMode === "trash" ? !isTrashed : isTrashed) return false;
   if (isMaster() && staffFilterValue && o.enteredBy !== staffFilterValue) return false;
   if (!searchTerm) return true;
   const t = searchTerm.toLowerCase();
@@ -684,7 +691,7 @@ function renderRows(){
       const rowClasses = [isFirst ? "group-start" : "", isReady ? "row-ready" : ""].filter(Boolean).join(" ");
       html += `<tr class="${rowClasses}">
         <td class="oid">${isFirst ? o.id : ""}</td>
-        <td>${isFirst ? (o.poNumber||"\u2014") : ""}</td>
+        <td class="col-extra">${isFirst ? (o.poNumber||"\u2014") : ""}</td>
         <td>${isFirst ? o.date : ""}</td>
         <td>${isFirst ? o.customer : ""}</td>
         <td style="font-weight:600;background:var(--slate-bg);">${isFirst ? fmt(orderTotalValue, o.currency) : ""}</td>
@@ -693,8 +700,8 @@ function renderRows(){
         <td>${it.qty}</td>
         <td class="col-weight"><input type="number" min="0" step="0.01" class="wt-input" placeholder="kg" value="${it.weight ? it.weight : ""}" onchange="window.updateItemWeight('${o.id}', ${i}, this.value)"></td>
         <td class="col-weight">${it.weight ? ((it.qty||0)*Number(it.weight)).toLocaleString(undefined,{maximumFractionDigits:2}) + " kg" : "\u2014"}</td>
-        <td>${it.shippedQty||0}</td>
-        <td>${remaining}</td>
+        <td class="col-extra">${it.shippedQty||0}</td>
+        <td class="col-extra">${remaining}</td>
         <td>${fmt(it.price, o.currency)}</td>
         <td>${fmt((it.qty||0)*(it.price||0), o.currency)}</td>
         <td class="col-supplier supplier-cell"><input type="checkbox" class="supplier-check" ${it.supplierOrderedAt?"checked":""} onchange="window.toggleSupplierOrdered('${o.id}', ${i}, this.checked)"></td>
@@ -702,24 +709,31 @@ function renderRows(){
         <td style="text-align:center;">${canToggle ? `<input type="checkbox" class="ready-check" ${isReady?"checked":""} onchange="window.toggleReady('${o.id}', ${i}, this.checked)">` : ""}</td>
         <td><span class="badge ${statusClass(st)}">${st}</span></td>
         <td class="muted" style="display:${isMaster() ? "" : "none"};font-size:0.78rem;">${isFirst ? (o.enteredBy||"\u2014") : ""}</td>
-        <td class="muted" style="max-width:140px;font-size:0.78rem;">${isFirst ? (o.notes||"") : ""}</td>
-        <td style="white-space:nowrap;">${isFirst ? `
+        <td class="col-extra muted" style="max-width:140px;font-size:0.78rem;">${isFirst ? (o.notes||"") : ""}</td>
+        <td style="white-space:nowrap;">${isFirst ? (viewMode === "trash" ? `
+          <button class="rowbtn" onclick="window.restoreOrder('${o.id}')">Restore</button>
+          <button class="rowbtn" onclick="window.permanentlyDeleteOrder('${o.id}')">Delete forever</button>
+        ` : `
           <button class="rowbtn" onclick="window.openEdit('${o.id}')">Edit</button>
           <button class="rowbtn" onclick="window.openShip('${o.id}')">Ship</button>
           <button class="rowbtn" onclick="window.openPack('${o.id}')">Pack</button>
           <button class="rowbtn" onclick="window.printOrder('${o.id}')">Print</button>
           <button class="rowbtn" onclick="window.deleteOrder('${o.id}')">Delete</button>
-        ` : ""}</td>
+        `) : ""}</td>
       </tr>`;
     });
   });
   document.getElementById("emptyMsg").style.display = anyRows ? "none" : "block";
+  document.getElementById("emptyMsg").textContent = viewMode === "trash"
+    ? "Trash is empty."
+    : "No orders yet. Add your first order to get started.";
   tbody.innerHTML = html;
 }
 
 function populateDatalists(){
-  const customers = [...new Set(orders.map(o=>o.customer).filter(Boolean))].sort();
-  const items = [...new Set(orders.flatMap(o=>(o.items||[]).map(it=>it.item)).filter(Boolean))].sort();
+  const activeOrders = orders.filter(o => !o.deletedAt);
+  const customers = [...new Set(activeOrders.map(o=>o.customer).filter(Boolean))].sort();
+  const items = [...new Set(activeOrders.flatMap(o=>(o.items||[]).map(it=>it.item)).filter(Boolean))].sort();
   document.getElementById("customerList").innerHTML = customers.map(c=>`<option value="${c}">`).join("");
   document.getElementById("itemList").innerHTML = items.map(i=>`<option value="${i}">`).join("");
 }
@@ -727,7 +741,25 @@ function populateDatalists(){
 function render(){ if(!currentUser) return; renderFilters(); renderStats(); renderRows(); populateDatalists(); populateStaffFilter(); }
 
 window.deleteOrder = function(id){
-  if(!confirm("Delete order " + id + " and all its line items?")) return;
+  if(!confirm("Move order " + id + " to Trash? You can restore it later from the Trash view.")) return;
+  const o = orders.find(x=>x.id===id);
+  if(!o) return;
+  saveOrderToDb({
+    ...o,
+    deletedAt: new Date().toISOString(),
+    deletedBy: currentUser ? currentUser.name : ""
+  });
+};
+
+window.restoreOrder = function(id){
+  const o = orders.find(x=>x.id===id);
+  if(!o) return;
+  const restored = { ...o, deletedAt: null, deletedBy: null };
+  saveOrderToDb(restored);
+};
+
+window.permanentlyDeleteOrder = function(id){
+  if(!confirm("Permanently delete order " + id + "? This cannot be undone.")) return;
   deleteOrderFromDb(id);
 };
 
@@ -852,6 +884,16 @@ function setupColToggle(btnId, bodyClass, storageKey, defaultOn){
 }
 setupColToggle("toggleWeightCols", "hide-weight-cols", "colsWeight", true);
 setupColToggle("toggleSupplierCols", "hide-supplier-cols", "colsSupplier", false);
+setupColToggle("toggleExtraCols", "hide-extra-cols", "colsExtra", false);
+
+document.getElementById("trashToggleBtn").onclick = () => {
+  viewMode = viewMode === "trash" ? "active" : "trash";
+  const btn = document.getElementById("trashToggleBtn");
+  btn.classList.toggle("on", viewMode === "trash");
+  btn.textContent = viewMode === "trash" ? "\u2190 Back to orders" : "\ud83d\uddd1 Trash";
+  document.getElementById("newOrderBtn").style.display = viewMode === "trash" ? "none" : "";
+  render();
+};
 
 // ---- New / Edit order modal ----
 const orderOverlay = document.getElementById("orderOverlay");
