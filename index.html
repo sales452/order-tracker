@@ -300,7 +300,7 @@
     <thead>
       <tr>
         <th>Order ID</th><th>PO #</th><th>Date</th><th>Customer</th><th>Item</th>
-        <th>Qty</th><th>Shipped</th><th>Remaining</th><th>Unit Price</th><th>Total</th><th title="Ordered from supplier">Ordered</th><th title="Time since ordered from supplier">Waiting On Supplier</th><th>Ready</th><th>Status</th><th id="thEnteredBy" style="display:none;">Entered By</th><th>Notes</th><th></th>
+        <th>Qty</th><th>Shipped</th><th>Remaining</th><th>Unit Price</th><th>Total</th><th title="Tick this when you place the order with the supplier">\u2611 To Supplier</th><th title="Live clock \u2014 starts counting the moment you tick 'To Supplier'">\u23f1 Waiting On Supplier</th><th>Ready</th><th>Status</th><th id="thEnteredBy" style="display:none;">Entered By</th><th>Notes</th><th></th>
       </tr>
     </thead>
     <tbody id="rows"></tbody>
@@ -634,7 +634,7 @@ function renderRows(){
         <td>${fmt(it.price, o.currency)}</td>
         <td>${fmt((it.qty||0)*(it.price||0), o.currency)}</td>
         <td class="supplier-cell"><input type="checkbox" class="supplier-check" ${it.supplierOrderedAt?"checked":""} onchange="window.toggleSupplierOrdered('${o.id}', ${i}, this.checked)"></td>
-        <td class="supplier-cell">${it.supplierOrderedAt ? `<span class="supplier-timer" data-since="${it.supplierOrderedAt}">${formatElapsed(it.supplierOrderedAt)}</span>` : `<span class="muted" style="font-size:0.78rem;">\u2014</span>`}</td>
+        <td class="supplier-cell">${it.supplierOrderedAt ? `<span class="supplier-timer" data-since="${it.supplierOrderedAt}">${formatElapsed(it.supplierOrderedAt)}</span>` : `<span class="muted" style="font-size:0.72rem;">Not ordered yet</span>`}</td>
         <td style="text-align:center;">${canToggle ? `<input type="checkbox" class="ready-check" ${isReady?"checked":""} onchange="window.toggleReady('${o.id}', ${i}, this.checked)">` : ""}</td>
         <td><span class="badge ${statusClass(st)}">${st}</span></td>
         <td class="muted" style="display:${isMaster() ? "" : "none"};font-size:0.78rem;">${isFirst ? (o.enteredBy||"\u2014") : ""}</td>
