@@ -457,10 +457,31 @@ function loadOrders(){
   ordersUnsub = onSnapshot(ordersCol, (snapshot) => {
     orders = snapshot.docs.map(d => d.data());
     render();
+    if (isMaster()) claimUnownedOrders();
   }, (err) => {
     console.error("Failed to load orders from Firestore", err);
   });
 }
+
+// One-time cleanup: any order saved before the login/ownership system existed
+// has no ownerUid. Only the master account can even read those (per the
+// rules), so as soon as master is looking at them, stamp them as hers --
+// this locks them to her permanently and makes "Entered By" show her name.
+const claimedIds = new Set();
+function claimUnownedOrders(){
+  orders.forEach(o => {
+    if (o.ownerUid || claimedIds.has(o.id)) return;
+    claimedIds.add(o.id);
+    saveOrderToDb({
+      ...o,
+      ownerUid: currentUser.uid,
+      enteredBy: "Silven",
+      lastEditedBy: currentUser.name,
+      lastEditedAt: new Date().toISOString()
+    });
+  });
+}
+
 async function saveOrderToDb(o){
   try{ await setDoc(doc(db, "orders", o.id), o); }
   catch(err){ console.error(err); alert("Could not save to the database. Check your connection and try again."); }
