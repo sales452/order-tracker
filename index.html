@@ -126,6 +126,15 @@
   }
   .supplier-timer.overdue{color:var(--rust);font-weight:600;}
   .supplier-cell{text-align:center;white-space:nowrap;}
+  body.hide-weight-cols .col-weight{display:none;}
+  body.hide-supplier-cols .col-supplier{display:none;}
+  .col-toggle-btn{
+    font-family:'IBM Plex Mono',monospace;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;
+    padding:0.45rem 0.7rem;border:1px solid var(--line);border-radius:3px;
+    background:var(--paper-raised);color:var(--ink-soft);cursor:pointer;
+  }
+  .col-toggle-btn.on{background:var(--slate);color:#fff;border-color:var(--slate);}
+  .wt-input{width:70px;padding:0.3rem 0.4rem;border:1px solid var(--line);border-radius:3px;font-size:0.82rem;background:var(--paper-raised);}
   tbody tr:hover{background:#F7F6EF;}
   .oid{font-family:'IBM Plex Mono',monospace;font-weight:500;}
   .muted{color:var(--ink-soft);}
@@ -175,7 +184,7 @@
   }
   .items-block{border-top:1px dashed var(--line);border-bottom:1px dashed var(--line);margin:1rem 0;padding:1rem 0;}
   .items-header{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--ink-soft);margin-bottom:0.6rem;}
-  .item-row{display:grid;grid-template-columns:2fr 0.8fr 0.9fr 0.9fr 1fr 32px;gap:0.5rem;align-items:end;margin-bottom:0.6rem;}
+  .item-row{display:grid;grid-template-columns:1.7fr 0.6fr 0.8fr 0.7fr 0.8fr 0.9fr 32px;gap:0.5rem;align-items:end;margin-bottom:0.6rem;}
   .item-row label{font-size:0.62rem;text-transform:uppercase;color:var(--ink-soft);display:block;margin-bottom:0.2rem;font-family:'IBM Plex Mono',monospace;}
   .item-row input, .item-row select{width:100%;padding:0.45rem 0.55rem;border:1px solid var(--line);font-size:0.85rem;border-radius:3px;background:var(--paper);}
   .item-remove{background:none;border:1px solid var(--line);border-radius:3px;cursor:pointer;color:var(--rust);height:34px;}
@@ -184,6 +193,19 @@
   .ship-row{display:grid;grid-template-columns:2fr 0.8fr 0.8fr 0.9fr 1fr;gap:0.5rem;align-items:center;padding:0.5rem 0;border-bottom:1px solid var(--line);font-size:0.85rem;}
   .ship-row.head{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;text-transform:uppercase;color:var(--ink-soft);border-bottom:2px solid var(--ink);}
   .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .box-card{border:1px solid var(--line);border-radius:4px;padding:0.75rem 0.9rem;margin-bottom:0.6rem;background:var(--paper);}
+  .box-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;}
+  .box-card-head h4{margin:0;font-family:'Roboto Slab',serif;font-size:1rem;}
+  .box-dims{display:grid;grid-template-columns:repeat(3,1fr) 1fr;gap:0.5rem;margin-bottom:0.7rem;}
+  .box-dims .field{margin-bottom:0;}
+  .box-items{border-top:1px dashed var(--line);padding-top:0.5rem;max-height:280px;overflow-y:auto;}
+  .box-item-row{display:grid;grid-template-columns:1.8fr 0.8fr 0.8fr 0.9fr 0.9fr;gap:0.5rem;align-items:center;padding:0.2rem 0;font-size:0.8rem;}
+  .box-item-row.head{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;text-transform:uppercase;color:var(--ink-soft);position:sticky;top:0;background:var(--paper);padding-bottom:0.3rem;}
+  .box-item-row input{width:100%;padding:0.35rem 0.5rem;border:1px solid var(--line);border-radius:3px;font-size:0.82rem;background:var(--paper-raised);}
+  .box-weight{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:var(--ink-soft);margin-top:0.5rem;}
+  .pack-summary{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:var(--ink-soft);margin-bottom:0.9rem;padding:0.6rem 0.8rem;background:var(--gray-bg);border-radius:3px;}
+  .pack-summary .short{color:var(--rust);font-weight:600;}
+  .remove-box{background:none;border:1px solid var(--line);border-radius:3px;color:var(--rust);cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;padding:0.3rem 0.5rem;}
   @media (max-width: 720px){
     body{padding:1.25rem 0.75rem 3rem;}
     h1{font-size:1.5rem;}
@@ -255,6 +277,11 @@
     #printArea th, #printArea td{border:1px solid #999;padding:0.4rem 0.6rem;font-size:0.85rem;text-align:left;}
     #printArea tfoot td{border-top:2px solid #000;}
     #printArea .print-footer{margin-top:1.5rem;font-size:0.8rem;color:#333;}
+    #printArea .pack-box{border:1px solid #999;border-radius:3px;padding:0.6rem 0.9rem;margin-bottom:0.7rem;page-break-inside:avoid;}
+    #printArea .pack-box h3{margin:0 0 0.3rem;font-family:'Roboto Slab',serif;font-size:1rem;}
+    #printArea .pack-box .dims{font-size:0.8rem;color:#333;margin-bottom:0.4rem;}
+    #printArea .pack-box ul{margin:0;padding-left:1.1rem;font-size:0.85rem;}
+    #printArea .pack-totals{font-weight:600;border-top:2px solid #000;padding-top:0.6rem;margin-top:0.8rem;font-size:0.9rem;}
   }
 </style>
 </head>
@@ -292,6 +319,8 @@
   <div class="toolbar">
     <input class="search" id="search" placeholder="Search order id, PO number, customer, or item...">
     <select class="staff-filter" id="staffFilter" style="display:none;"><option value="">All staff</option></select>
+    <button type="button" class="col-toggle-btn" id="toggleWeightCols">Weight cols</button>
+    <button type="button" class="col-toggle-btn" id="toggleSupplierCols">Supplier cols</button>
     <div class="filters" id="filters"></div>
   </div>
 
@@ -299,8 +328,8 @@
   <table>
     <thead>
       <tr>
-        <th>Order ID</th><th>PO #</th><th>Date</th><th>Customer</th><th>Item</th>
-        <th>Qty</th><th>Shipped</th><th>Remaining</th><th>Unit Price</th><th>Total</th><th title="Tick this when you place the order with the supplier">\u2611 To Supplier</th><th title="Live clock \u2014 starts counting the moment you tick 'To Supplier'">\u23f1 Waiting On Supplier</th><th>Ready</th><th>Status</th><th id="thEnteredBy" style="display:none;">Entered By</th><th>Notes</th><th></th>
+        <th>Order ID</th><th>PO #</th><th>Date</th><th>Customer</th><th style="background:var(--slate-bg);">Order Total</th><th style="background:var(--slate-bg);">Order Wt</th><th>Item</th>
+        <th>Qty</th><th class="col-weight">Wt/Unit</th><th class="col-weight">Total Wt</th><th>Shipped</th><th>Remaining</th><th>Unit Price</th><th>Total</th><th class="col-supplier" title="Tick this when you place the order with the supplier">&#9745; To Supplier</th><th class="col-supplier" title="Live clock &#8212; starts counting the moment you tick 'To Supplier'">&#9201; Waiting On Supplier</th><th>Ready</th><th>Status</th><th id="thEnteredBy" style="display:none;">Entered By</th><th>Notes</th><th></th>
       </tr>
     </thead>
     <tbody id="rows"></tbody>
@@ -356,6 +385,20 @@
       <button class="ghost" id="printShip">Print</button>
       <button class="ghost" id="cancelShip">Cancel</button>
       <button class="primary" id="saveShip">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="packOverlay">
+  <div class="modal" style="max-width:760px;">
+    <h2 id="packModalTitle">Packing list</h2>
+    <div class="pack-summary" id="packSummary"></div>
+    <div id="boxList"></div>
+    <button type="button" class="add-line" id="addBoxBtn">+ Add box</button>
+    <div class="modal-actions">
+      <button class="ghost" id="printPack">Print packing list</button>
+      <button class="ghost" id="cancelPack">Cancel</button>
+      <button class="primary" id="savePack">Save</button>
     </div>
   </div>
 </div>
@@ -561,7 +604,7 @@ function renderFilters(){
 
 function renderStats(){
   const el = document.getElementById("stats");
-  let totalOrders = orders.length, totalLines = 0, deliveredCount = 0;
+  let totalOrders = orders.length, totalLines = 0, deliveredCount = 0, totalWeight = 0;
   const pendingByCcy = {}, allByCcy = {};
   orders.forEach(o => {
     const ccy = o.currency || "INR";
@@ -570,6 +613,7 @@ function renderStats(){
       const st = itemStatus(it);
       const remaining = Math.max(0, (Number(it.qty)||0) - (Number(it.shippedQty)||0));
       allByCcy[ccy] = (allByCcy[ccy]||0) + (Number(it.qty)||0) * (Number(it.price)||0);
+      totalWeight += (Number(it.qty)||0) * (Number(it.weight)||0);
       if (st === "Pending" || st === "Partial") pendingByCcy[ccy] = (pendingByCcy[ccy]||0) + remaining * (Number(it.price)||0);
       if (st === "Delivered") deliveredCount++;
     });
@@ -583,6 +627,7 @@ function renderStats(){
     <div class="stat"><div class="n" style="font-size:1.1rem;">${joinCcy(pendingByCcy)}</div><div class="l">Pending value</div></div>
     <div class="stat"><div class="n">${deliveredCount}</div><div class="l">Delivered lines</div></div>
     <div class="stat"><div class="n" style="font-size:1.1rem;">${joinCcy(allByCcy)}</div><div class="l">Total value</div></div>
+    <div class="stat"><div class="n" style="font-size:1.1rem;">${totalWeight.toLocaleString(undefined,{maximumFractionDigits:1})} kg</div><div class="l">Total weight</div></div>
   `;
 }
 
@@ -614,6 +659,8 @@ function renderRows(){
     const withIdx = (o.items||[]).map((it, i) => ({ it, i }));
     const items = withIdx.filter(({it}) => activeFilter==="All" || itemStatus(it)===activeFilter);
     if (!items.length) return;
+    const orderTotalValue = (o.items||[]).reduce((s,it)=> s + (Number(it.qty)||0)*(Number(it.price)||0), 0);
+    const orderTotalWeight = (o.items||[]).reduce((s,it)=> s + (Number(it.qty)||0)*(Number(it.weight)||0), 0);
     items.forEach(({it, i}, idx) => {
       anyRows = true;
       const st = itemStatus(it);
@@ -627,14 +674,18 @@ function renderRows(){
         <td>${isFirst ? (o.poNumber||"\u2014") : ""}</td>
         <td>${isFirst ? o.date : ""}</td>
         <td>${isFirst ? o.customer : ""}</td>
+        <td style="font-weight:600;background:var(--slate-bg);">${isFirst ? fmt(orderTotalValue, o.currency) : ""}</td>
+        <td style="font-weight:600;background:var(--slate-bg);">${isFirst ? (orderTotalWeight ? orderTotalWeight.toLocaleString(undefined,{maximumFractionDigits:2}) + " kg" : "\u2014") : ""}</td>
         <td>${it.item}</td>
         <td>${it.qty}</td>
+        <td class="col-weight"><input type="number" min="0" step="0.01" class="wt-input" placeholder="kg" value="${it.weight ? it.weight : ""}" onchange="window.updateItemWeight('${o.id}', ${i}, this.value)"></td>
+        <td class="col-weight">${it.weight ? ((it.qty||0)*Number(it.weight)).toLocaleString(undefined,{maximumFractionDigits:2}) + " kg" : "\u2014"}</td>
         <td>${it.shippedQty||0}</td>
         <td>${remaining}</td>
         <td>${fmt(it.price, o.currency)}</td>
         <td>${fmt((it.qty||0)*(it.price||0), o.currency)}</td>
-        <td class="supplier-cell"><input type="checkbox" class="supplier-check" ${it.supplierOrderedAt?"checked":""} onchange="window.toggleSupplierOrdered('${o.id}', ${i}, this.checked)"></td>
-        <td class="supplier-cell">${it.supplierOrderedAt ? `<span class="supplier-timer" data-since="${it.supplierOrderedAt}">${formatElapsed(it.supplierOrderedAt)}</span>` : `<span class="muted" style="font-size:0.72rem;">Not ordered yet</span>`}</td>
+        <td class="col-supplier supplier-cell"><input type="checkbox" class="supplier-check" ${it.supplierOrderedAt?"checked":""} onchange="window.toggleSupplierOrdered('${o.id}', ${i}, this.checked)"></td>
+        <td class="col-supplier supplier-cell">${it.supplierOrderedAt ? `<span class="supplier-timer" data-since="${it.supplierOrderedAt}">${formatElapsed(it.supplierOrderedAt)}</span>` : `<span class="muted" style="font-size:0.72rem;">Not ordered yet</span>`}</td>
         <td style="text-align:center;">${canToggle ? `<input type="checkbox" class="ready-check" ${isReady?"checked":""} onchange="window.toggleReady('${o.id}', ${i}, this.checked)">` : ""}</td>
         <td><span class="badge ${statusClass(st)}">${st}</span></td>
         <td class="muted" style="display:${isMaster() ? "" : "none"};font-size:0.78rem;">${isFirst ? (o.enteredBy||"\u2014") : ""}</td>
@@ -642,6 +693,7 @@ function renderRows(){
         <td style="white-space:nowrap;">${isFirst ? `
           <button class="rowbtn" onclick="window.openEdit('${o.id}')">Edit</button>
           <button class="rowbtn" onclick="window.openShip('${o.id}')">Ship</button>
+          <button class="rowbtn" onclick="window.openPack('${o.id}')">Pack</button>
           <button class="rowbtn" onclick="window.printOrder('${o.id}')">Print</button>
           <button class="rowbtn" onclick="window.deleteOrder('${o.id}')">Delete</button>
         ` : ""}</td>
@@ -670,6 +722,13 @@ window.toggleReady = function(orderId, itemIndex, checked){
   const o = orders.find(x=>x.id===orderId);
   if(!o || !o.items || !o.items[itemIndex]) return;
   o.items[itemIndex].status = checked ? "Ready to ship" : "Pending";
+  saveOrderToDb(o);
+};
+
+window.updateItemWeight = function(orderId, itemIndex, value){
+  const o = orders.find(x=>x.id===orderId);
+  if(!o || !o.items || !o.items[itemIndex]) return;
+  o.items[itemIndex].weight = Math.max(0, Number(value)||0);
   saveOrderToDb(o);
 };
 
@@ -723,13 +782,16 @@ window.printOrder = function(id){
     const remaining = Math.max(0,(it.qty||0)-(it.shippedQty||0));
     const st = itemStatus(it);
     const stColor = PRINT_STATUS_COLOR[st] || "#000";
+    const wt = Number(it.weight)||0;
     return `<tr>
       <td>${it.item}</td><td>${it.qty}</td><td>${it.shippedQty||0}</td>
       <td>${remaining}</td><td>${fmt(it.price, ccy)}</td><td>${fmt((it.qty||0)*(it.price||0), ccy)}</td>
+      <td>${wt ? (wt*(it.qty||0)).toLocaleString(undefined,{maximumFractionDigits:2}) + " kg" : "\u2014"}</td>
       <td><span style="color:${stColor};font-weight:600;">${st}</span></td>
     </tr>`;
   }).join("");
   const grandTotal = (o.items||[]).reduce((s,it)=>s+(it.qty||0)*(it.price||0),0);
+  const grandWeight = (o.items||[]).reduce((s,it)=>s+(it.qty||0)*(Number(it.weight)||0),0);
   const allShipped = (o.items||[]).every(it => (it.shippedQty||0) >= (it.qty||0));
   const c = CURRENCIES[ccy] || CURRENCIES.INR;
   document.getElementById("printArea").innerHTML = `
@@ -747,9 +809,9 @@ window.printOrder = function(id){
       ${o.notes ? "<br>Notes: " + o.notes : ""}
     </div>
     <table>
-      <thead><tr><th>Item</th><th>Ordered</th><th>Shipped</th><th>Remaining</th><th>Unit price</th><th>Total</th><th>Status</th></tr></thead>
+      <thead><tr><th>Item</th><th>Ordered</th><th>Shipped</th><th>Remaining</th><th>Unit price</th><th>Total</th><th>Weight</th><th>Status</th></tr></thead>
       <tbody>${rows}</tbody>
-      <tfoot><tr><td colspan="5" style="text-align:right;font-weight:600;">Grand total</td><td style="font-weight:600;">${fmt(grandTotal, ccy)}</td><td></td></tr></tfoot>
+      <tfoot><tr><td colspan="5" style="text-align:right;font-weight:600;">Grand total</td><td style="font-weight:600;">${fmt(grandTotal, ccy)}</td><td style="font-weight:600;">${grandWeight ? grandWeight.toLocaleString(undefined,{maximumFractionDigits:2}) + " kg" : "\u2014"}</td><td></td></tr></tfoot>
     </table>
     <div class="print-footer">Printed ${new Date().toLocaleDateString()}</div>
   `;
@@ -759,6 +821,24 @@ window.printOrder = function(id){
 document.getElementById("search").addEventListener("input", e=>{
   searchTerm = e.target.value; renderRows();
 });
+
+// Weight and supplier-tracking columns can make the table quite wide, so
+// they're collapsible per-device. The choice is remembered between visits.
+function setupColToggle(btnId, bodyClass, storageKey, defaultOn){
+  const btn = document.getElementById(btnId);
+  const saved = localStorage.getItem(storageKey);
+  const isOn = saved ? saved === "on" : defaultOn;
+  document.body.classList.toggle(bodyClass, !isOn);
+  btn.classList.toggle("on", isOn);
+  btn.onclick = () => {
+    const nowOn = !btn.classList.contains("on");
+    btn.classList.toggle("on", nowOn);
+    document.body.classList.toggle(bodyClass, !nowOn);
+    localStorage.setItem(storageKey, nowOn ? "on" : "off");
+  };
+}
+setupColToggle("toggleWeightCols", "hide-weight-cols", "colsWeight", true);
+setupColToggle("toggleSupplierCols", "hide-supplier-cols", "colsSupplier", false);
 
 // ---- New / Edit order modal ----
 const orderOverlay = document.getElementById("orderOverlay");
@@ -793,10 +873,12 @@ function addLineRow(data){
   row.className = "item-row";
   row.dataset.rowId = id;
   const hadPrice = data && data.price != null && data.price !== "";
+  const hadWeight = data && data.weight != null && data.weight !== "";
   row.innerHTML = `
     <div><label>Item / part number</label><input class="li-item" list="itemList" autocomplete="off" value="${data && data.item ? data.item : ""}"></div>
     <div><label>Qty</label><input class="li-qty" type="number" min="0" value="${data && data.qty!=null ? data.qty : 1}"></div>
     <div><label>Unit price</label><input class="li-price" type="number" min="0" step="0.01" value="${hadPrice ? data.price : ""}"></div>
+    <div><label>Wt/unit (kg)</label><input class="li-weight" type="number" min="0" step="0.01" value="${hadWeight ? data.weight : ""}"></div>
     <div><label>Shipped qty</label><input class="li-shipped" type="number" min="0" value="${data && data.shippedQty!=null ? data.shippedQty : 0}"></div>
     <div><label>Status</label>
       <select class="li-status">
@@ -827,9 +909,10 @@ function readLineRows(){
     const item = row.querySelector(".li-item").value.trim();
     const qty = Number(row.querySelector(".li-qty").value)||0;
     const price = Number(row.querySelector(".li-price").value)||0;
+    const weight = Number(row.querySelector(".li-weight").value)||0;
     const shippedQty = Number(row.querySelector(".li-shipped").value)||0;
     const status = row.querySelector(".li-status").value;
-    return { item, qty, price, shippedQty, status };
+    return { item, qty, price, weight, shippedQty, status };
   }).filter(it => it.item);
 }
 
@@ -928,6 +1011,174 @@ document.getElementById("saveShip").onclick = () => {
   }
   saveOrderToDb(o);
   shipOverlay.classList.remove("show");
+};
+
+// ---- Packing list modal ----
+// Lets you split an order's items across as many boxes as you like, mixing
+// and matching freely (e.g. 2 of item A + 1 of item B in Box 1, the rest of
+// item A alone in Box 2). Each box gets its own dimensions and its weight is
+// worked out automatically from the per-unit weights on the order.
+const packOverlay = document.getElementById("packOverlay");
+const boxListEl = document.getElementById("boxList");
+let packingId = null;
+let workingBoxes = []; // local editable copy: [{boxNo, length, width, breadth, items:[{item, qty}]}]
+
+function packedQtyFor(itemName){
+  return workingBoxes.reduce((sum, b) => sum + (b.items||[]).reduce((s,bi)=> s + (bi.item===itemName ? (Number(bi.qty)||0) : 0), 0), 0);
+}
+function weightFor(itemName){
+  const o = orders.find(x=>x.id===packingId);
+  const it = o && (o.items||[]).find(x=>x.item===itemName);
+  return it ? Number(it.weight)||0 : 0;
+}
+function boxWeight(box){
+  return (box.items||[]).reduce((s,bi)=> s + (Number(bi.qty)||0) * weightFor(bi.item), 0);
+}
+
+window.openPack = function(id){
+  packingId = id;
+  const o = orders.find(x=>x.id===id);
+  if(!o) return;
+  document.getElementById("packModalTitle").textContent = "Packing list \u2014 " + o.id;
+  workingBoxes = (o.boxes && o.boxes.length ? o.boxes : []).map(b => ({
+    boxNo: b.boxNo, length: b.length||"", width: b.width||"", breadth: b.breadth||"",
+    items: (b.items||[]).map(bi => ({ item: bi.item, qty: bi.qty }))
+  }));
+  if (!workingBoxes.length) addBox();
+  renderPackModal();
+  packOverlay.classList.add("show");
+};
+
+function addBox(){
+  const nextNo = workingBoxes.length ? Math.max(...workingBoxes.map(b=>b.boxNo||0)) + 1 : 1;
+  const o = orders.find(x=>x.id===packingId);
+  workingBoxes.push({
+    boxNo: nextNo, length: "", width: "", breadth: "",
+    items: (o.items||[]).map(it => ({ item: it.item, qty: 0 }))
+  });
+}
+document.getElementById("addBoxBtn").onclick = () => { addBox(); renderPackModal(); };
+
+function renderPackModal(){
+  const o = orders.find(x=>x.id===packingId);
+  if (!o) return;
+  const orderItems = o.items || [];
+
+  // Summary of packed vs ordered qty per item, across all boxes
+  const summaryRows = orderItems.map(it => {
+    const packed = packedQtyFor(it.item);
+    const short = packed < (it.qty||0);
+    const over = packed > (it.qty||0);
+    return `<div>${it.item}: ${packed}/${it.qty} packed${short ? ` <span class="short">(${it.qty-packed} left)</span>` : (over ? ` <span class="short">(${packed-it.qty} over)</span>` : "")}</div>`;
+  }).join("");
+  document.getElementById("packSummary").innerHTML = summaryRows || "No line items on this order yet.";
+
+  boxListEl.innerHTML = "";
+  workingBoxes.forEach((box, bIdx) => {
+    const card = document.createElement("div");
+    card.className = "box-card";
+    card.innerHTML = `
+      <div class="box-card-head">
+        <h4>Box ${box.boxNo}</h4>
+        <button type="button" class="remove-box" data-bidx="${bIdx}">Remove box</button>
+      </div>
+      <div class="box-dims">
+        <div class="field"><label>Length (cm)</label><input type="number" min="0" class="box-l" value="${box.length}"></div>
+        <div class="field"><label>Width (cm)</label><input type="number" min="0" class="box-w" value="${box.width}"></div>
+        <div class="field"><label>Breadth (cm)</label><input type="number" min="0" class="box-b" value="${box.breadth}"></div>
+        <div class="field"><label>Weight (auto)</label><input type="text" disabled value="${boxWeight(box).toLocaleString(undefined,{maximumFractionDigits:2})} kg"></div>
+      </div>
+      <div class="box-items">
+        <div class="box-item-row head"><span>Item</span><span>Ordered qty</span><span>Wt/unit (kg)</span><span>Qty in box</span><span>Wt in box</span></div>
+        ${orderItems.map((it, iIdx) => {
+          const existing = (box.items||[]).find(bi => bi.item === it.item);
+          const qtyInBox = existing ? Number(existing.qty)||0 : 0;
+          const unitWt = Number(it.weight)||0;
+          return `<div class="box-item-row">
+            <span>${it.item}</span><span class="muted">${it.qty}</span>
+            <input type="number" min="0" step="0.01" class="box-item-weight" data-item="${it.item}" value="${unitWt || ""}">
+            <input type="number" min="0" class="box-item-qty" data-bidx="${bIdx}" data-item="${it.item}" value="${qtyInBox}">
+            <span class="muted">${unitWt ? (qtyInBox*unitWt).toLocaleString(undefined,{maximumFractionDigits:2}) + " kg" : "\u2014"}</span>
+          </div>`;
+        }).join("")}
+      </div>
+    `;
+    boxListEl.appendChild(card);
+  });
+
+  boxListEl.querySelectorAll(".box-l, .box-w, .box-b").forEach((input, idx) => {
+    const bIdx = Math.floor(idx/3);
+    const field = input.classList.contains("box-l") ? "length" : input.classList.contains("box-w") ? "width" : "breadth";
+    input.addEventListener("input", () => {
+      workingBoxes[bIdx][field] = input.value;
+      const card = boxListEl.children[bIdx];
+      const wtField = card && card.querySelector(".box-dims input[disabled]");
+      if (wtField) wtField.value = boxWeight(workingBoxes[bIdx]).toLocaleString(undefined,{maximumFractionDigits:2}) + " kg";
+    });
+  });
+  boxListEl.querySelectorAll(".box-item-qty").forEach(input => {
+    input.addEventListener("change", () => {
+      const bIdx = Number(input.dataset.bidx);
+      const itemName = input.dataset.item;
+      const val = Math.max(0, Number(input.value)||0);
+      const box = workingBoxes[bIdx];
+      const existing = (box.items||[]).find(bi => bi.item === itemName);
+      if (existing) existing.qty = val; else box.items.push({ item: itemName, qty: val });
+      renderPackModal();
+    });
+  });
+  boxListEl.querySelectorAll(".box-item-weight").forEach(input => {
+    input.addEventListener("change", () => {
+      const itemName = input.dataset.item;
+      const val = Math.max(0, Number(input.value)||0);
+      const o = orders.find(x=>x.id===packingId);
+      const it = o && (o.items||[]).find(x=>x.item===itemName);
+      if (it) it.weight = val;
+      renderPackModal();
+    });
+  });
+  boxListEl.querySelectorAll(".remove-box").forEach(btn => {
+    btn.onclick = () => { workingBoxes.splice(Number(btn.dataset.bidx), 1); renderPackModal(); };
+  });
+}
+
+document.getElementById("cancelPack").onclick = () => packOverlay.classList.remove("show");
+document.getElementById("savePack").onclick = () => {
+  const o = orders.find(x=>x.id===packingId);
+  if (!o) return;
+  o.boxes = workingBoxes.map(b => ({
+    boxNo: b.boxNo, length: b.length, width: b.width, breadth: b.breadth,
+    items: (b.items||[]).filter(bi => (Number(bi.qty)||0) > 0)
+  }));
+  saveOrderToDb(o);
+  packOverlay.classList.remove("show");
+};
+
+document.getElementById("printPack").onclick = () => {
+  const o = orders.find(x=>x.id===packingId);
+  if (!o) return;
+  const boxesHtml = workingBoxes.map(box => {
+    const items = (box.items||[]).filter(bi => (Number(bi.qty)||0) > 0);
+    const dims = [box.length, box.width, box.breadth].some(v=>v) ? `${box.length||"?"} x ${box.width||"?"} x ${box.breadth||"?"} cm` : "Dimensions not set";
+    return `<div class="pack-box">
+      <h3>Box ${box.boxNo}</h3>
+      <div class="dims">${dims} \u2014 ${boxWeight(box).toLocaleString(undefined,{maximumFractionDigits:2})} kg</div>
+      <ul>${items.map(bi => `<li>${bi.item} \u00d7 ${bi.qty}</li>`).join("") || "<li>No items assigned</li>"}</ul>
+    </div>`;
+  }).join("");
+  const totalBoxes = workingBoxes.length;
+  const totalWeight = workingBoxes.reduce((s,b)=> s + boxWeight(b), 0);
+  document.getElementById("printArea").innerHTML = `
+    <div class="print-head">
+      <h1>Packing List \u2014 Order ${o.id}</h1>
+      <img src="${COMPANY_LOGO}" alt="Company logo">
+    </div>
+    <div class="meta">Customer: ${o.customer}<br>Date: ${o.date}</div>
+    ${boxesHtml || "<p>No boxes added yet.</p>"}
+    <div class="pack-totals">Total boxes: ${totalBoxes} &nbsp;&nbsp; Total weight: ${totalWeight.toLocaleString(undefined,{maximumFractionDigits:2})} kg</div>
+    <div class="print-footer">Printed ${new Date().toLocaleDateString()}</div>
+  `;
+  window.print();
 };
 
 </script>
