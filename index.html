@@ -119,6 +119,13 @@
   tbody tr.row-ready{background:var(--teal-bg);}
   tbody tr.row-ready:hover{background:#CBE3E0;}
   .ready-check{width:18px;height:18px;cursor:pointer;accent-color:var(--teal);}
+  .supplier-check{width:18px;height:18px;cursor:pointer;accent-color:var(--mustard);}
+  .supplier-timer{
+    display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;
+    color:var(--ink-soft);white-space:nowrap;font-variant-numeric:tabular-nums;
+  }
+  .supplier-timer.overdue{color:var(--rust);font-weight:600;}
+  .supplier-cell{text-align:center;white-space:nowrap;}
   tbody tr:hover{background:#F7F6EF;}
   .oid{font-family:'IBM Plex Mono',monospace;font-weight:500;}
   .muted{color:var(--ink-soft);}
@@ -293,7 +300,7 @@
     <thead>
       <tr>
         <th>Order ID</th><th>PO #</th><th>Date</th><th>Customer</th><th>Item</th>
-        <th>Qty</th><th>Shipped</th><th>Remaining</th><th>Unit Price</th><th>Total</th><th>Ready</th><th>Status</th><th id="thEnteredBy" style="display:none;">Entered By</th><th>Notes</th><th></th>
+        <th>Qty</th><th>Shipped</th><th>Remaining</th><th>Unit Price</th><th>Total</th><th title="Ordered from supplier">Ordered</th><th title="Time since ordered from supplier">Waiting On Supplier</th><th>Ready</th><th>Status</th><th id="thEnteredBy" style="display:none;">Entered By</th><th>Notes</th><th></th>
       </tr>
     </thead>
     <tbody id="rows"></tbody>
@@ -464,18 +471,43 @@ function loadOrders(){
 }
 
 // One-time cleanup: any order saved before the login/ownership system existed
-// has no ownerUid. Only the master account can even read those (per the
-// rules), so as soon as master is looking at them, stamp them as hers --
-// this locks them to her permanently and makes "Entered By" show her name.
+// has no ownerUid, and some are from an even older version of this tracker
+// that stored one flat item per order (item/qty/price/packedQty) instead of
+// an items[] array. Only the master account can even read those (per the
+// rules), so as soon as master is looking at them: reshape them into the
+// current items[] format if needed, and stamp them as hers -- this locks
+// them to her permanently and makes "Entered By" show her name.
 const claimedIds = new Set();
 function claimUnownedOrders(){
   orders.forEach(o => {
-    if (o.ownerUid || claimedIds.has(o.id)) return;
+    const needsClaim = !o.ownerUid;
+    const needsMigration = !Array.isArray(o.items);
+    if ((!needsClaim && !needsMigration) || claimedIds.has(o.id)) return;
     claimedIds.add(o.id);
+
+    let items = o.items;
+    if (needsMigration){
+      const qty = Number(o.qty)||0;
+      const shippedQty = Number(o.packedQty)||0;
+      items = o.item ? [{
+        item: o.item,
+        qty,
+        price: Number(o.price)||0,
+        shippedQty,
+        status: shippedQty >= qty && qty > 0 ? "Shipped" : (shippedQty > 0 ? "Partial" : "Pending")
+      }] : [];
+    }
+
     saveOrderToDb({
-      ...o,
-      ownerUid: currentUser.uid,
-      enteredBy: "Silven",
+      id: o.id,
+      poNumber: o.poNumber || "",
+      date: o.date || new Date().toISOString().slice(0,10),
+      customer: o.customer || "",
+      currency: o.currency || "INR",
+      notes: o.notes || "",
+      items,
+      ownerUid: o.ownerUid || currentUser.uid,
+      enteredBy: o.enteredBy || "Silven",
       lastEditedBy: currentUser.name,
       lastEditedAt: new Date().toISOString()
     });
@@ -565,7 +597,7 @@ function orderMatches(o){
 function populateStaffFilter(){
   if (!isMaster()) return;
   const sel = document.getElementById("staffFilter");
-  const names = [...new Set(Object.values(USERS).map(u => u.name))].sort();
+  const names = [...new Set(Object.values(USERNAME_INFO).map(u => u.name))].sort();
   const prev = staffFilterValue;
   sel.innerHTML = `<option value="">All staff</option>` + names.map(n => `<option value="${n}" ${n===prev?"selected":""}>${n}</option>`).join("");
 }
@@ -601,6 +633,8 @@ function renderRows(){
         <td>${remaining}</td>
         <td>${fmt(it.price, o.currency)}</td>
         <td>${fmt((it.qty||0)*(it.price||0), o.currency)}</td>
+        <td class="supplier-cell"><input type="checkbox" class="supplier-check" ${it.supplierOrderedAt?"checked":""} onchange="window.toggleSupplierOrdered('${o.id}', ${i}, this.checked)"></td>
+        <td class="supplier-cell">${it.supplierOrderedAt ? `<span class="supplier-timer" data-since="${it.supplierOrderedAt}">${formatElapsed(it.supplierOrderedAt)}</span>` : `<span class="muted" style="font-size:0.78rem;">\u2014</span>`}</td>
         <td style="text-align:center;">${canToggle ? `<input type="checkbox" class="ready-check" ${isReady?"checked":""} onchange="window.toggleReady('${o.id}', ${i}, this.checked)">` : ""}</td>
         <td><span class="badge ${statusClass(st)}">${st}</span></td>
         <td class="muted" style="display:${isMaster() ? "" : "none"};font-size:0.78rem;">${isFirst ? (o.enteredBy||"\u2014") : ""}</td>
@@ -638,6 +672,40 @@ window.toggleReady = function(orderId, itemIndex, checked){
   o.items[itemIndex].status = checked ? "Ready to ship" : "Pending";
   saveOrderToDb(o);
 };
+
+// "Ordered from supplier" tracking: tick the box the moment you place the
+// order, and a small clock keeps ticking next to it so you can see at a
+// glance how long you've been waiting -- handy for deciding when to chase
+// the supplier for a follow-up.
+window.toggleSupplierOrdered = function(orderId, itemIndex, checked){
+  const o = orders.find(x=>x.id===orderId);
+  if(!o || !o.items || !o.items[itemIndex]) return;
+  o.items[itemIndex].supplierOrderedAt = checked ? new Date().toISOString() : null;
+  saveOrderToDb(o);
+};
+
+function formatElapsed(sinceISO){
+  const since = new Date(sinceISO).getTime();
+  if (isNaN(since)) return "\u2014";
+  let diff = Math.max(0, Math.floor((Date.now() - since) / 1000));
+  const days = Math.floor(diff / 86400); diff -= days * 86400;
+  const hours = Math.floor(diff / 3600); diff -= hours * 3600;
+  const mins = Math.floor(diff / 60); diff -= mins * 60;
+  const secs = diff;
+  return `${days}d ${String(hours).padStart(2,"0")}h ${String(mins).padStart(2,"0")}m ${String(secs).padStart(2,"0")}s`;
+}
+
+// Ticks every second without a full table re-render, so the clocks update
+// live even while you're doing other things on the page.
+setInterval(() => {
+  document.querySelectorAll(".supplier-timer[data-since]").forEach(el => {
+    const since = el.dataset.since;
+    if (!since) return;
+    el.textContent = formatElapsed(since);
+    const days = Math.floor((Date.now() - new Date(since).getTime()) / 86400000);
+    el.classList.toggle("overdue", days >= 3); // flag anything waiting 3+ days
+  });
+}, 1000);
 
 window.printOrder = function(id){
   const o = orders.find(x=>x.id===id);
