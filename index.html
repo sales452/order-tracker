@@ -406,7 +406,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot
+  getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
@@ -493,9 +493,16 @@ onAuthStateChanged(auth, user => {
     document.getElementById("login-user").value = "";
     document.getElementById("login-pass").value = "";
     document.getElementById("loginError").textContent = "";
+    // Always start from a clean slate: drop any listener/data left over
+    // from a previous account in this same tab before loading fresh.
+    if (ordersUnsub) { ordersUnsub(); ordersUnsub = null; }
+    orders = [];
+    claimedIds.clear();
     showApp();
     loadOrders();
   } else {
+    if (ordersUnsub) { ordersUnsub(); ordersUnsub = null; }
+    orders = [];
     currentUser = null;
     showLogin();
   }
@@ -504,7 +511,13 @@ onAuthStateChanged(auth, user => {
 let ordersUnsub = null;
 function loadOrders(){
   if (ordersUnsub) return; // already listening
-  ordersUnsub = onSnapshot(ordersCol, (snapshot) => {
+  // Master can see the whole collection (the rule allows this unconditionally
+  // for master, so an unfiltered query is provably safe). Staff can only ever
+  // read their own orders, so the query itself must ask for just those --
+  // Firestore refuses to run an unfiltered "give me everything" query unless
+  // it can prove in advance the whole result set is authorized.
+  const q = isMaster() ? ordersCol : query(ordersCol, where("ownerUid", "==", currentUser.uid));
+  ordersUnsub = onSnapshot(q, (snapshot) => {
     orders = snapshot.docs.map(d => d.data());
     render();
     if (isMaster()) claimUnownedOrders();
