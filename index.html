@@ -349,7 +349,7 @@
     <thead>
       <tr>
         <th>Order ID</th><th class="col-extra">PO #</th><th>Date</th><th>Customer</th><th style="background:var(--slate-bg);">Order Total</th><th style="background:var(--slate-bg);">Order Wt</th><th>Item</th>
-        <th>Qty</th><th class="col-weight">Wt/Unit</th><th class="col-weight">Total Wt</th><th class="col-extra">Shipped</th><th class="col-extra">Remaining</th><th>Unit Price</th><th>Total</th><th class="col-supplier" title="Tick this when you place the order with the supplier">&#9745; To Supplier</th><th class="col-supplier" title="Live clock &#8212; starts counting the moment you tick 'To Supplier'">&#9201; Waiting On Supplier</th><th>Ready</th><th>Status</th><th id="thEnteredBy" style="display:none;">Entered By</th><th class="col-extra">Notes</th><th></th>
+        <th>Qty</th><th class="col-weight">Wt/Unit</th><th class="col-weight">Total Wt</th><th class="col-extra">Shipped</th><th class="col-extra">Remaining</th><th>Unit Price</th><th>Total</th><th class="col-supplier" title="Tick this when you place the order with the supplier">&#9745; To Supplier</th><th class="col-supplier" title="Live clock &#8212; starts counting the moment you tick 'To Supplier'">&#9201; Waiting On Supplier</th><th>Ready</th><th>Status</th><th title="Live clock &#8212; counts from when the order was first entered, stops once every item has shipped">&#9201; Pending Since</th><th id="thEnteredBy" style="display:none;">Entered By</th><th class="col-extra">Notes</th><th></th>
       </tr>
     </thead>
     <tbody id="rows"></tbody>
@@ -400,9 +400,12 @@
     </div>
 
     <div class="field"><label>Notes</label><textarea id="f-notes" rows="2"></textarea></div>
-    <div class="modal-actions">
-      <button class="ghost" id="cancelOrder">Cancel</button>
-      <button class="primary" id="saveOrder">Save order</button>
+    <div class="modal-actions" style="justify-content:space-between;align-items:center;">
+      <span id="orderSaveStatus" class="muted" style="font-family:'IBM Plex Mono',monospace;font-size:0.78rem;"></span>
+      <div style="display:flex;gap:0.6rem;">
+        <button class="ghost" id="cancelOrder">Cancel</button>
+        <button class="primary" id="saveOrder">Save order</button>
+      </div>
     </div>
   </div>
 </div>
@@ -463,10 +466,13 @@
       <button type="button" class="add-line" id="addQuoteLineBtn">+ Add line item</button>
     </div>
     <div class="field"><label>Notes / terms</label><textarea id="q-notes" rows="2" placeholder="e.g. Prices exclude freight. Payment terms 50% advance."></textarea></div>
-    <div class="modal-actions">
-      <button class="ghost" id="cancelQuote">Cancel</button>
-      <button class="ghost" id="saveAndPrintQuote">Save &amp; print</button>
-      <button class="primary" id="saveQuote">Save quote</button>
+    <div class="modal-actions" style="justify-content:space-between;align-items:center;flex-wrap:wrap;">
+      <span id="quoteSaveStatus" class="muted" style="font-family:'IBM Plex Mono',monospace;font-size:0.78rem;"></span>
+      <div style="display:flex;gap:0.6rem;">
+        <button class="ghost" id="cancelQuote">Cancel</button>
+        <button class="ghost" id="saveAndPrintQuote">Save &amp; print</button>
+        <button class="primary" id="saveQuote">Save quote</button>
+      </div>
     </div>
   </div>
 </div>
@@ -491,7 +497,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, where
+  getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, where, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
@@ -510,6 +516,15 @@ const db = getFirestore(fbApp);
 const auth = getAuth(fbApp);
 const ordersCol = collection(db, "orders");
 const quotesCol = collection(db, "quotes");
+// A shared counter each signed-in user (master or staff) can atomically
+// increment to hand out globally-unique ORD-/QT- numbers, even though staff
+// can only ever read their OWN orders. Computing "next ID" from a role-
+// filtered local list (the old approach) let two different staff members
+// generate the same ID independently, which Firestore then correctly
+// rejected as a permission error when the write collided with someone
+// else's existing document.
+const orderCounterRef = doc(db, "counters", "orders");
+const quoteCounterRef = doc(db, "counters", "quotes");
 
 const COMPANY_LOGO = "data:image/png;base64,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BAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABoCgEAAKApBAAAgKYQAAAAmkIAAABo6v8DzURNJNMszScAAAAASUVORK5CYII=";
 
@@ -619,7 +634,7 @@ function loadOrders(){
   ordersUnsub = onSnapshot(q, (snapshot) => {
     orders = snapshot.docs.map(d => d.data());
     render();
-    if (isMaster()) claimUnownedOrders();
+    if (isMaster()){ claimUnownedOrders(); seedOrderCounterIfNeeded(); }
   }, (err) => {
     console.error("Failed to load orders from Firestore", err);
   });
@@ -635,6 +650,7 @@ function loadQuotes(){
     quotes = snapshot.docs.map(d => d.data());
     renderQuotes();
     populateDatalists();
+    if (isMaster()) seedQuoteCounterIfNeeded();
   }, (err) => {
     console.error("Failed to load quotes from Firestore", err);
   });
@@ -678,6 +694,7 @@ function claimUnownedOrders(){
       items,
       ownerUid: o.ownerUid || currentUser.uid,
       enteredBy: o.enteredBy || "Silven",
+      createdAt: o.createdAt || ((o.date || new Date().toISOString().slice(0,10)) + "T00:00:00.000Z"),
       lastEditedBy: currentUser.name,
       lastEditedAt: new Date().toISOString()
     });
@@ -699,6 +716,46 @@ async function saveQuoteToDb(q){
 async function deleteQuoteFromDb(id){
   try{ await deleteDoc(doc(db, "quotes", id)); }
   catch(err){ console.error(err); alert("Could not delete the quote. Check your connection and try again."); }
+}
+
+// Reserves an ID from the shared counter and attempts to save a brand-new
+// order under it. Since staff can't see every existing order, a reserved
+// number can occasionally already belong to someone else (most commonly
+// right after this counter feature is first deployed, before it has
+// caught up to the true highest ID in use). Rather than surface that as an
+// error, silently reserve the NEXT number and try again -- this self-heals
+// within a handful of attempts without needing anyone to manually
+// intervene or log in in a particular order.
+async function createOrderWithRetry(orderFields, maxAttempts = 20, onAttempt){
+  for (let attempt = 0; attempt < maxAttempts; attempt++){
+    const id = await nextOrderIdAsync();
+    if (onAttempt) onAttempt(attempt + 1, id);
+    const order = { id, ...orderFields };
+    try{
+      await setDoc(doc(db, "orders", id), order);
+      return order;
+    }catch(err){
+      if (err && err.code === "permission-denied") continue; // id already taken by someone else -- try the next one
+      throw err;
+    }
+  }
+  throw new Error("Could not find a free order ID after multiple attempts.");
+}
+
+async function createQuoteWithRetry(quoteFields, maxAttempts = 20, onAttempt){
+  for (let attempt = 0; attempt < maxAttempts; attempt++){
+    const id = await nextQuoteIdAsync();
+    if (onAttempt) onAttempt(attempt + 1, id);
+    const q = { id, ...quoteFields };
+    try{
+      await setDoc(doc(db, "quotes", id), q);
+      return q;
+    }catch(err){
+      if (err && err.code === "permission-denied") continue;
+      throw err;
+    }
+  }
+  throw new Error("Could not find a free quote ID after multiple attempts.");
 }
 
 const CURRENCIES = {
@@ -734,10 +791,36 @@ function fmt(n, currencyCode){
   const c = CURRENCIES[currencyCode] || CURRENCIES.INR;
   return c.symbol + Number(n||0).toLocaleString(c.locale, {maximumFractionDigits:2});
 }
-function nextId(){
-  const nums = orders.map(o => parseInt((o.id||"").replace("ORD-",""),10)).filter(n=>!isNaN(n));
-  const next = (nums.length ? Math.max(...nums) : 0) + 1;
-  return "ORD-" + String(next).padStart(3,"0");
+// Atomically reserves the next order number via a shared counter doc, so
+// two different users (who can't see each other's orders) never collide.
+async function nextOrderIdAsync(){
+  const newSeq = await runTransaction(db, async (tx) => {
+    const snap = await tx.get(orderCounterRef);
+    const current = snap.exists() ? (Number(snap.data().next) || 0) : 0;
+    const next = current + 1;
+    tx.set(orderCounterRef, { next }, { merge: true });
+    return next;
+  });
+  return "ORD-" + String(newSeq).padStart(3, "0");
+}
+
+// One-time bootstrap: only master can see every order, so only master is
+// able to correctly seed the shared counter above its true current high-
+// water mark the very first time this feature runs. After this, the
+// counter itself is the single source of truth for everyone.
+let orderCounterSeeded = false;
+async function seedOrderCounterIfNeeded(){
+  if (orderCounterSeeded || !isMaster()) return;
+  orderCounterSeeded = true;
+  const seenMax = Math.max(0, ...orders.map(o => parseInt((o.id||"").replace("ORD-",""),10)).filter(n=>!isNaN(n)));
+  if (seenMax <= 0) return;
+  try{
+    await runTransaction(db, async (tx) => {
+      const snap = await tx.get(orderCounterRef);
+      const current = snap.exists() ? (Number(snap.data().next) || 0) : 0;
+      if (seenMax > current) tx.set(orderCounterRef, { next: seenMax }, { merge: true });
+    });
+  }catch(err){ console.error("Could not seed order counter", err); }
 }
 function itemStatus(it){
   if (it.status === "Delivered" || it.status === "Cancelled") return it.status;
@@ -822,6 +905,7 @@ function renderRows(){
     if (!items.length) return;
     const orderTotalValue = (o.items||[]).reduce((s,it)=> s + (Number(it.qty)||0)*(Number(it.price)||0), 0);
     const orderTotalWeight = (o.items||[]).reduce((s,it)=> s + (Number(it.qty)||0)*(Number(it.weight)||0), 0);
+    const orderFullyShipped = (o.items||[]).length > 0 && (o.items||[]).every(it => (it.shippedQty||0) >= (it.qty||0));
     items.forEach(({it, i}, idx) => {
       anyRows = true;
       const st = itemStatus(it);
@@ -849,6 +933,13 @@ function renderRows(){
         <td class="col-supplier supplier-cell">${it.supplierOrderedAt ? `<span class="supplier-timer" data-since="${it.supplierOrderedAt}">${formatElapsed(it.supplierOrderedAt)}</span>` : `<span class="muted" style="font-size:0.72rem;">Not ordered yet</span>`}</td>
         <td style="text-align:center;">${canToggle ? `<input type="checkbox" class="ready-check" ${isReady?"checked":""} onchange="window.toggleReady('${o.id}', ${i}, this.checked)">` : ""}</td>
         <td><span class="badge ${statusClass(st)}">${st}</span></td>
+        <td>${isFirst ? (
+          orderFullyShipped
+            ? `<span class="muted" style="font-size:0.72rem;">\u2014</span>`
+            : (o.createdAt
+                ? `<span class="supplier-timer order-pending-timer" data-since="${o.createdAt}">${formatElapsed(o.createdAt)}</span>`
+                : `<span class="muted" style="font-size:0.72rem;">\u2014</span>`)
+          ) : ""}</td>
         <td class="muted" style="display:${isMaster() ? "" : "none"};font-size:0.78rem;">${isFirst ? (o.enteredBy||"\u2014") : ""}</td>
         <td class="col-extra muted" style="max-width:140px;font-size:0.78rem;">${isFirst ? (o.notes||"") : ""}</td>
         <td style="white-space:nowrap;">${isFirst ? (viewMode === "trash" ? `
@@ -1052,6 +1143,26 @@ document.getElementById("trashToggleBtn").onclick = () => {
   render();
 };
 
+// Shows a running "Saving... 1.2s" label on a button so a slow save (e.g.
+// one that needed several ID-collision retries) is visible instead of
+// looking like a silent hang. Returns a stop() function that restores the
+// button's original label and re-enables it.
+function startSavingTimer(btn, baseLabel){
+  const original = btn.textContent;
+  const startedAt = Date.now();
+  let attempts = 1;
+  const tick = () => {
+    const secs = ((Date.now() - startedAt) / 1000).toFixed(1);
+    btn.textContent = `${baseLabel}\u2026 ${secs}s` + (attempts > 1 ? ` (try ${attempts})` : "");
+  };
+  tick();
+  const interval = setInterval(tick, 100);
+  return {
+    reportAttempt: (n) => { attempts = n; },
+    stop: () => { clearInterval(interval); btn.textContent = original; }
+  };
+}
+
 // ---- New / Edit order modal ----
 const orderOverlay = document.getElementById("orderOverlay");
 const itemRowsEl = document.getElementById("itemRows");
@@ -1157,7 +1268,7 @@ window.openEdit = function(id){
 };
 
 document.getElementById("cancelOrder").onclick = () => { orderOverlay.classList.remove("show"); editingId = null; };
-document.getElementById("saveOrder").onclick = () => {
+document.getElementById("saveOrder").onclick = async () => {
   const customer = document.getElementById("f-customer").value.trim();
   const items = readLineRows();
   if(!customer){ alert("Customer name is required."); return; }
@@ -1168,15 +1279,40 @@ document.getElementById("saveOrder").onclick = () => {
   const notes = document.getElementById("f-notes").value.trim();
 
   const existing = editingId ? orders.find(x => x.id === editingId) : null;
-  const order = {
-    id: editingId || nextId(),
-    poNumber, date, customer, currency, notes, items,
-    ownerUid: (existing && existing.ownerUid) ? existing.ownerUid : (currentUser ? currentUser.uid : ""),
-    enteredBy: (existing && existing.enteredBy) ? existing.enteredBy : (currentUser ? currentUser.name : ""),
-    lastEditedBy: currentUser ? currentUser.name : "",
-    lastEditedAt: new Date().toISOString()
-  };
-  saveOrderToDb(order);
+  const saveBtn = document.getElementById("saveOrder");
+  saveBtn.disabled = true;
+  const timer = startSavingTimer(saveBtn, "Saving");
+
+  try{
+    if (editingId){
+      await saveOrderToDb({
+        id: editingId,
+        poNumber, date, customer, currency, notes, items,
+        ownerUid: existing ? existing.ownerUid : (currentUser ? currentUser.uid : ""),
+        enteredBy: existing ? existing.enteredBy : (currentUser ? currentUser.name : ""),
+        createdAt: (existing && existing.createdAt) ? existing.createdAt : new Date().toISOString(),
+        lastEditedBy: currentUser ? currentUser.name : "",
+        lastEditedAt: new Date().toISOString()
+      });
+    } else {
+      await createOrderWithRetry({
+        poNumber, date, customer, currency, notes, items,
+        ownerUid: currentUser ? currentUser.uid : "",
+        enteredBy: currentUser ? currentUser.name : "",
+        createdAt: new Date().toISOString(),
+        lastEditedBy: currentUser ? currentUser.name : "",
+        lastEditedAt: new Date().toISOString()
+      }, 20, (attempt) => timer.reportAttempt(attempt));
+    }
+  }catch(err){
+    console.error("Could not save the order", err);
+    timer.stop();
+    alert("Could not save the order. Check your connection and try again.");
+    saveBtn.disabled = false;
+    return;
+  }
+  timer.stop();
+  saveBtn.disabled = false;
   editingId = null;
   orderOverlay.classList.remove("show");
 };
@@ -1420,10 +1556,31 @@ document.getElementById("viewQuotesBtn").onclick = () => {
   renderQuotes();
 };
 
-function nextQuoteId(){
-  const nums = quotes.map(q => parseInt((q.id||"").replace("QT-",""),10)).filter(n=>!isNaN(n));
-  const next = (nums.length ? Math.max(...nums) : 0) + 1;
-  return "QT-" + String(next).padStart(3,"0");
+// Atomically reserves the next quote number, same reasoning as orders above.
+async function nextQuoteIdAsync(){
+  const newSeq = await runTransaction(db, async (tx) => {
+    const snap = await tx.get(quoteCounterRef);
+    const current = snap.exists() ? (Number(snap.data().next) || 0) : 0;
+    const next = current + 1;
+    tx.set(quoteCounterRef, { next }, { merge: true });
+    return next;
+  });
+  return "QT-" + String(newSeq).padStart(3, "0");
+}
+
+let quoteCounterSeeded = false;
+async function seedQuoteCounterIfNeeded(){
+  if (quoteCounterSeeded || !isMaster()) return;
+  quoteCounterSeeded = true;
+  const seenMax = Math.max(0, ...quotes.map(q => parseInt((q.id||"").replace("QT-",""),10)).filter(n=>!isNaN(n)));
+  if (seenMax <= 0) return;
+  try{
+    await runTransaction(db, async (tx) => {
+      const snap = await tx.get(quoteCounterRef);
+      const current = snap.exists() ? (Number(snap.data().next) || 0) : 0;
+      if (seenMax > current) tx.set(quoteCounterRef, { next: seenMax }, { merge: true });
+    });
+  }catch(err){ console.error("Could not seed quote counter", err); }
 }
 
 function renderQuotes(){
@@ -1443,11 +1600,76 @@ function renderQuotes(){
       <td style="white-space:nowrap;">
         <button class="rowbtn" onclick="window.openEditQuote('${q.id}')">Edit</button>
         <button class="rowbtn" onclick="window.openPrintQuote('${q.id}')">Print</button>
+        ${q.convertedOrderId
+          ? `<span class="muted" style="font-size:0.72rem;">\u2192 ${q.convertedOrderId}</span>`
+          : `<button class="rowbtn" onclick="window.convertQuoteToOrder('${q.id}', this)">\u2192 Order</button>`}
         <button class="rowbtn" onclick="window.deleteQuote('${q.id}')">Delete</button>
       </td>
     </tr>`;
   }).join("");
 }
+
+// Turns an accepted quote into a real order: copies over the customer and
+// line items (converting RMB pricing to USD, since orders only support
+// INR/USD/EUR), stamps today's date as the order date, and links the two
+// records both ways so it's clear the quote has already been actioned and
+// won't accidentally get converted twice.
+window.convertQuoteToOrder = async function(id, btn){
+  const q = quotes.find(x => x.id === id);
+  if (!q) return;
+  if (q.convertedOrderId){
+    alert("This quote was already converted to order " + q.convertedOrderId + ".");
+    return;
+  }
+  if (!confirm(`Create a new order from quote ${q.id} for "${q.customer}"? This adds a new order dated today.`)) return;
+
+  const srcCcy = q.currency || "INR";
+  const orderCcy = srcCcy === "RMB" ? "USD" : srcCcy; // orders only support INR/USD/EUR
+  const items = (q.items || []).map(it => ({
+    item: it.item,
+    qty: Number(it.qty) || 0,
+    price: srcCcy === "RMB"
+      ? Math.round(convertAmount(Number(it.price)||0, "RMB", "USD") * 100) / 100
+      : (Number(it.price) || 0),
+    weight: 0,
+    shippedQty: 0,
+    status: "Pending"
+  }));
+
+  if (btn) btn.disabled = true;
+  const timer = btn ? startSavingTimer(btn, "Converting") : null;
+
+  try{
+    const order = await createOrderWithRetry({
+      poNumber: "",
+      date: new Date().toISOString().slice(0,10),
+      customer: q.customer,
+      currency: orderCcy,
+      notes: (q.notes ? q.notes + "\n" : "") + "Converted from quote " + q.id,
+      items,
+      ownerUid: currentUser ? currentUser.uid : "",
+      enteredBy: currentUser ? currentUser.name : "",
+      createdAt: new Date().toISOString(),
+      lastEditedBy: currentUser ? currentUser.name : "",
+      lastEditedAt: new Date().toISOString()
+    }, 20, (attempt) => timer && timer.reportAttempt(attempt));
+
+    await saveQuoteToDb({ ...q, convertedOrderId: order.id, convertedAt: new Date().toISOString() });
+
+    // Jump straight to Orders and filter to the new order so it's obvious
+    // the conversion worked.
+    document.getElementById("viewOrdersBtn").click();
+    searchTerm = order.id;
+    document.getElementById("search").value = order.id;
+    renderRows();
+  }catch(err){
+    console.error("Could not convert quote to order", err);
+    alert("Could not create the order from this quote. Check your connection and try again.");
+  }finally{
+    if (timer) timer.stop();
+    if (btn) btn.disabled = false;
+  }
+};
 
 function addQuoteLineRow(data){
   const id = "qline" + (quoteLineSeq++);
@@ -1532,15 +1754,15 @@ document.getElementById("cancelQuote").onclick = () => { quoteOverlay.classList.
 // on creation and never overwritten on edit, exactly like orders -- this is
 // what lets a staff member's own quotes stay theirs even after a master
 // edits them, and is what the Firestore rule keys off of.
-function collectQuoteFromForm(){
+// Validates the form and returns the quote's field data (without an id --
+// ID assignment happens separately so new quotes can retry on collision).
+function collectQuoteFieldsFromForm(){
   const customer = document.getElementById("q-customer").value.trim();
   const items = readQuoteLineRows();
   if (!customer){ alert("Customer name is required."); return null; }
   if (!items.length){ alert("Add at least one line item."); return null; }
-  const id = editingQuoteId || nextQuoteId();
   const existing = editingQuoteId ? quotes.find(x=>x.id===editingQuoteId) : null;
   return {
-    id,
     date: document.getElementById("q-date").value || new Date().toISOString().slice(0,10),
     validUntil: document.getElementById("q-validuntil").value || "",
     customer,
@@ -1555,21 +1777,50 @@ function collectQuoteFromForm(){
   };
 }
 
-document.getElementById("saveQuote").onclick = () => {
-  const q = collectQuoteFromForm();
-  if (!q) return;
-  saveQuoteToDb(q);
+// Saves the current form as either an update to the quote being edited, or
+// a brand-new quote (retrying on an ID collision, same reasoning as
+// orders). Returns the saved quote's id on success, or null on failure/
+// validation error -- the button is re-enabled by the caller either way.
+async function saveQuoteFromForm(btn){
+  const fields = collectQuoteFieldsFromForm();
+  if (!fields) return null;
+  const timer = btn ? startSavingTimer(btn, "Saving") : null;
+  try{
+    if (editingQuoteId){
+      await saveQuoteToDb({ id: editingQuoteId, ...fields });
+      return editingQuoteId;
+    } else {
+      const q = await createQuoteWithRetry(fields, 20, (attempt) => timer && timer.reportAttempt(attempt));
+      return q.id;
+    }
+  }catch(err){
+    console.error("Could not save the quote", err);
+    alert("Could not save the quote. Check your connection and try again.");
+    return null;
+  }finally{
+    if (timer) timer.stop();
+  }
+}
+
+document.getElementById("saveQuote").onclick = async () => {
+  const btn = document.getElementById("saveQuote");
+  btn.disabled = true;
+  const savedId = await saveQuoteFromForm(btn);
+  btn.disabled = false;
+  if (!savedId) return;
   quoteOverlay.classList.remove("show");
   editingQuoteId = null;
 };
 
-document.getElementById("saveAndPrintQuote").onclick = () => {
-  const q = collectQuoteFromForm();
-  if (!q) return;
-  saveQuoteToDb(q);
+document.getElementById("saveAndPrintQuote").onclick = async () => {
+  const btn = document.getElementById("saveAndPrintQuote");
+  btn.disabled = true;
+  const savedId = await saveQuoteFromForm(btn);
+  btn.disabled = false;
+  if (!savedId) return;
   quoteOverlay.classList.remove("show");
   editingQuoteId = null;
-  window.openPrintQuote(q.id);
+  window.openPrintQuote(savedId);
 };
 
 window.deleteQuote = function(id){
