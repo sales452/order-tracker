@@ -390,6 +390,7 @@
         </select>
       </div>
     </div>
+    <div class="field"><label>Customer address</label><textarea id="f-address" rows="2" placeholder="Full shipping / billing address for this customer"></textarea></div>
     <datalist id="customerList"></datalist>
     <datalist id="itemList"></datalist>
 
@@ -689,6 +690,7 @@ function claimUnownedOrders(){
       poNumber: o.poNumber || "",
       date: o.date || new Date().toISOString().slice(0,10),
       customer: o.customer || "",
+      address: o.address || "",
       currency: o.currency || "INR",
       notes: o.notes || "",
       items,
@@ -1094,7 +1096,7 @@ window.printOrder = function(id){
     </div>
     <div class="meta">
       PO number: ${o.poNumber || "\u2014"}<br>
-      Customer: ${o.customer}<br>
+      Customer: ${o.customer}${o.address ? "<br>" + o.address.replace(/\n/g,"<br>") : ""}<br>
       Date: ${o.date}<br>
       Currency: ${ccy} (${c.symbol})
       ${(o.courier || o.trackingNumber || o.shippedDate) ? `<br>
@@ -1243,6 +1245,7 @@ document.getElementById("newOrderBtn").onclick = () => {
   editingId = null;
   document.getElementById("orderModalTitle").textContent = "New order";
   document.getElementById("f-customer").value = "";
+  document.getElementById("f-address").value = "";
   document.getElementById("f-po").value = "";
   document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
   document.getElementById("f-currency").value = "INR";
@@ -1258,6 +1261,7 @@ window.openEdit = function(id){
   editingId = id;
   document.getElementById("orderModalTitle").textContent = "Edit order " + o.id;
   document.getElementById("f-customer").value = o.customer;
+  document.getElementById("f-address").value = o.address || "";
   document.getElementById("f-po").value = o.poNumber || "";
   document.getElementById("f-date").value = o.date;
   document.getElementById("f-currency").value = o.currency || "INR";
@@ -1270,6 +1274,7 @@ window.openEdit = function(id){
 document.getElementById("cancelOrder").onclick = () => { orderOverlay.classList.remove("show"); editingId = null; };
 document.getElementById("saveOrder").onclick = async () => {
   const customer = document.getElementById("f-customer").value.trim();
+  const address = document.getElementById("f-address").value.trim();
   const items = readLineRows();
   if(!customer){ alert("Customer name is required."); return; }
   if(!items.length){ alert("Add at least one line item."); return; }
@@ -1287,7 +1292,7 @@ document.getElementById("saveOrder").onclick = async () => {
     if (editingId){
       await saveOrderToDb({
         id: editingId,
-        poNumber, date, customer, currency, notes, items,
+        poNumber, date, customer, address, currency, notes, items,
         ownerUid: existing ? existing.ownerUid : (currentUser ? currentUser.uid : ""),
         enteredBy: existing ? existing.enteredBy : (currentUser ? currentUser.name : ""),
         createdAt: (existing && existing.createdAt) ? existing.createdAt : new Date().toISOString(),
@@ -1296,7 +1301,7 @@ document.getElementById("saveOrder").onclick = async () => {
       });
     } else {
       await createOrderWithRetry({
-        poNumber, date, customer, currency, notes, items,
+        poNumber, date, customer, address, currency, notes, items,
         ownerUid: currentUser ? currentUser.uid : "",
         enteredBy: currentUser ? currentUser.name : "",
         createdAt: new Date().toISOString(),
@@ -1521,7 +1526,7 @@ document.getElementById("printPack").onclick = () => {
       <img src="${COMPANY_LOGO}" alt="Company logo">
       <h1>Packing List \u2014 Order ${o.id}</h1>
     </div>
-    <div class="meta">Customer: ${o.customer}<br>Date: ${o.date}</div>
+    <div class="meta">Customer: ${o.customer}${o.address ? "<br>" + o.address.replace(/\n/g,"<br>") : ""}<br>Date: ${o.date}</div>
     ${boxesHtml || "<p>No boxes added yet.</p>"}
     <div class="pack-totals">Total boxes: ${totalBoxes} &nbsp;&nbsp; Total weight: ${totalWeight.toLocaleString(undefined,{maximumFractionDigits:2})} kg</div>
     <div class="print-footer">Printed ${new Date().toLocaleDateString()}</div>
@@ -1644,6 +1649,7 @@ window.convertQuoteToOrder = async function(id, btn){
       poNumber: "",
       date: new Date().toISOString().slice(0,10),
       customer: q.customer,
+      address: q.customerAddress || "",
       currency: orderCcy,
       notes: (q.notes ? q.notes + "\n" : "") + "Converted from quote " + q.id,
       items,
